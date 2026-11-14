@@ -89,3 +89,103 @@ Temperature data sourced from NASA Goddard Institute for Space Studies, GISTEMP 
 
 Official documentation:  
 https://data.giss.nasa.gov/gistemp/data_v4.html
+
+
+
+## 9. NASA Climate Spiral Visualization
+
+### 9.1 Source
+
+| Property | Details |
+|---|---|
+| Visualization | NASA Climate Spiral: 1880–Present |
+| NASA Scientific Visualization Studio ID | 5190 |
+| Publisher | NASA Goddard Space Flight Center |
+| Official page | https://svs.gsfc.nasa.gov/5190 |
+| Downloaded asset | GISTEMP_Spiral_English_degC_2160p60.mp4 |
+| Local path | assets/nasa/GISTEMP_Spiral_English_degC_2160p60.mp4 |
+| Format | MP4 |
+| Video codec | H.264 / AVC |
+| Resolution | 2160 × 2160 |
+| Frame rate | 60 FPS |
+| Duration | 30 seconds |
+| Audio stream | None |
+
+### 9.2 Download and Integrity Verification
+
+The visualization was downloaded from the NASA Scientific Visualization Studio.
+
+The downloaded video was verified using:
+
+- MP4 container structure inspection.
+- Verification of the `ftyp`, `mdat`, and `moov` boxes.
+- Full video decoding through FFmpeg.
+- Successful decoding of all 1,800 frames.
+- FFmpeg exit code 0.
+
+The final verified file size was 19,907,750 bytes.
+
+### 9.3 Visual Inspection
+
+Five preview frames were extracted at the following timestamps:
+
+| Timestamp | Year displayed |
+|---|---:|
+| 0.0 seconds | 1880 |
+| 7.5 seconds | 1927 |
+| 15.0 seconds | 1974 |
+| 22.5 seconds | 2021 |
+| 29.0 seconds | Final horizontal timeline view |
+
+The extracted frames were assembled into a contact sheet and visually inspected.
+
+Observed characteristics:
+
+- The visualization uses a circular, month-oriented climate spiral.
+- Month labels are arranged around the circular layout.
+- Temperature anomaly reference rings are visible.
+- The spiral changes shape and colour as the displayed years progress.
+- The final sampled frame transitions to a horizontal, year-labelled representation.
+
+Visual inspection confirmed that the downloaded video is readable and suitable as a visual reference for the project.
+
+### 9.4 Role in EARTH JUKEBOX
+
+The NASA Climate Spiral will serve as a scientific visualization and visual storytelling component.
+
+It can help users understand the historical progression of global temperature anomalies while listening to the corresponding sonification.
+
+The visualization and the standardized NASA GISTEMP JSON dataset have different roles:
+
+| Component | Role |
+|---|---|
+| NASA GISTEMP monthly JSON | Numerical source for scientific audio generation |
+| NASA Climate Spiral MP4 | Visual representation of the climate record |
+| EARTH JUKEBOX audio engine | Converts verified numerical measurements into sound |
+
+### 9.5 Scientific and Technical Limitations
+
+The video is a rendered visualization, not a raw numerical dataset.
+
+EARTH JUKEBOX must follow these rules:
+
+1. Never derive temperature anomaly values by sampling colours or pixels from the video.
+2. Use the standardized GISTEMP JSON dataset as the numerical source for sonification.
+3. Do not assume that one video frame corresponds to one monthly observation.
+4. Do not assume a linear relationship between video timestamps and dataset dates without verifying the visualization's timing and frame mapping.
+5. Do not use geographic stereo positioning for this global mean dataset because it does not provide geographically resolved measurements.
+6. Clearly distinguish original scientific measurements from artistic audio transformations.
+
+### 9.6 Preview Assets
+
+Extracted preview frames are stored in:
+
+`assets/nasa/preview_frames/`
+
+The contact sheet is stored as:
+
+`assets/nasa/preview_frames/contact_sheet.jpg`
+
+The original downloaded video remains in:
+
+`assets/nasa/GISTEMP_Spiral_English_degC_2160p60.mp4`
