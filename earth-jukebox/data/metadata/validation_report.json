@@ -1,0 +1,45 @@
+{
+    "dataset": "NASA GISTEMP v4",
+    "measurement": "Global temperature anomaly",
+    "unit": "degrees Celsius",
+    "reference_period": "1951-1980",
+    "total_year_records": 147,
+    "first_year": 1880,
+    "last_year": 2026,
+    "monthly_columns": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+    ],
+    "total_monthly_slots": 1764,
+    "valid_monthly_observations": 1762,
+    "missing_monthly_observations": 2,
+    "missing_value_marker": "***",
+    "latest_year_available_months": [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct"
+    ],
+    "statistics": {
+        "minimum_anomaly": -0.81,
+        "maximum_anomaly": 1.55,
+        "mean_anomaly": 0.08963677639046538
+    },
+    "validation_status": "passed"
+}

@@ -1,0 +1,12 @@
+{
+    "dataset_id": "global_temperature",
+    "dataset_name": "NASA GISTEMP v4",
+    "organization": "NASA Goddard Institute for Space Studies",
+    "source_url": "https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.csv",
+    "downloaded_at": "2026-11-14T09:41:27.684715+00:00",
+    "filename": "gistemp_global_monthly.csv",
+    "file_size_bytes": 12887,
+    "sha256": "a7b1939db2e7e484c798e925e0f07f8184356c52ac0e7ce264adcd0f25e81253",
+    "format": "CSV",
+    "download_status": "success"
+}
