@@ -1443,6 +1443,7 @@ function pausePlayback() {
   state.playing = false;
   clearTimer();
   stopActiveNotes();
+  state.lastSoundedIndex = -1;
   updatePlayButton();
   setPlaybackStatus(`Paused at ${formatMonth(state.records[state.index])}.`);
 }
@@ -1466,12 +1467,121 @@ function onSeek() {
 }
 
 function updateVolume() {
-  if (!state.masterGain || !state.audioContext) return;
-  state.masterGain.gain.setTargetAtTime(
-    Number(elements.volume.value) * 0.18,
-    state.audioContext.currentTime,
-    0.025,
-  );
+  setMasterVolume(Number(elements.volume.value));
+}
+
+function setMasterVolume(value) {
+  state.sound.master = Math.max(0, Math.min(1, value));
+  elements.volume.value = String(state.sound.master);
+  elements.studioMasterVolume.value = String(state.sound.master);
+  document.querySelector("#studio-master-value").textContent = `${Math.round(state.sound.master * 100)}%`;
+  updateAudioRouting();
+}
+
+function updateAudioRouting() {
+  if (!state.audioContext) return;
+  for (const layer of LAYER_NAMES) {
+    const config = state.sound.layers[layer];
+    const audible = config.enabled && (!state.sound.solo || state.sound.solo === layer);
+    setSmoothGain(state.layerGains[layer], audible ? config.volume : 0, 0.035);
+  }
+  setSmoothGain(state.masterGain, state.sound.muted ? 0 : state.sound.master * 0.36, 0.035);
+  setSmoothGain(state.reverbWet, state.sound.reverb.enabled ? state.sound.reverb.amount : 0, 0.08);
+  setSmoothGain(state.delayWet, state.sound.delay.enabled ? state.sound.delay.amount : 0, 0.08);
+}
+
+function updateStudioUI() {
+  elements.soundPalette.value = state.sound.palette;
+  elements.paletteDescription.textContent = SOUND_PALETTES[state.sound.palette]
+    ? SOUND_PALETTES[state.sound.palette].description
+    : "Custom sound design. Scientific mappings remain unchanged.";
+  elements.muteButton.textContent = state.sound.muted ? "Unmute" : "Mute";
+  elements.muteButton.setAttribute("aria-pressed", String(state.sound.muted));
+
+  for (const layer of LAYER_NAMES) {
+    const config = state.sound.layers[layer];
+    elements.layerInstruments[layer].value = state.sound.instruments[layer];
+    elements.layerLevels[layer].value = String(config.volume);
+    elements.layerLevelValues[layer].textContent = `${Math.round(config.volume * 100)}%`;
+    elements.layerEnabled[layer].checked = config.enabled;
+  }
+  for (const button of elements.soloButtons) {
+    const soloed = state.sound.solo === button.dataset.soloLayer;
+    button.textContent = soloed ? "Unsolo" : "Solo";
+    button.setAttribute("aria-pressed", String(soloed));
+  }
+  elements.reverbEnabled.checked = state.sound.reverb.enabled;
+  elements.reverbLevel.value = String(state.sound.reverb.amount);
+  elements.reverbLevelValue.textContent = `${Math.round(state.sound.reverb.amount * 100)}%`;
+  elements.delayEnabled.checked = state.sound.delay.enabled;
+  elements.delayLevel.value = String(state.sound.delay.amount);
+  elements.delayLevelValue.textContent = `${Math.round(state.sound.delay.amount * 100)}%`;
+}
+
+function applySoundPalette(paletteName) {
+  const palette = SOUND_PALETTES[paletteName];
+  if (!palette) {
+    state.sound.palette = "custom";
+    updateStudioUI();
+    return;
+  }
+  state.sound.palette = paletteName;
+  state.sound.instruments = { ...palette.instruments };
+  for (const layer of LAYER_NAMES) {
+    state.sound.layers[layer].volume = palette.levels[layer];
+  }
+  state.sound.reverb = { enabled: palette.reverb > 0, amount: palette.reverb };
+  state.sound.delay = { enabled: palette.delay > 0, amount: palette.delay };
+  updateStudioUI();
+  updateAudioRouting();
+  if (state.records.length) updateLayerReadouts(state.records[state.index]);
+}
+
+function resetSoundConfiguration() {
+  state.sound.palette = "scientific";
+  state.sound.instruments = { ...SOUND_PALETTES.scientific.instruments };
+  state.sound.solo = null;
+  state.sound.muted = false;
+  state.sound.master = 0.55;
+  for (const layer of LAYER_NAMES) {
+    state.sound.layers[layer] = { enabled: true, volume: SOUND_PALETTES.scientific.levels[layer] };
+  }
+  state.sound.reverb = { enabled: false, amount: 0 };
+  state.sound.delay = { enabled: false, amount: 0 };
+  setMasterVolume(state.sound.master);
+  updateStudioUI();
+  updateAudioRouting();
+  if (state.records.length) updateLayerReadouts(state.records[state.index]);
+}
+
+async function previewLayer(layer, button) {
+  try {
+    await ensureAudio();
+    startAudioVisuals();
+    const instrument = state.sound.instruments[layer];
+    const frequency = layer === "melody"
+      ? state.records.length
+        ? MIN_FREQUENCY_HZ * Math.pow(2, normalizedValue(state.records[state.index]) * PITCH_OCTAVES)
+        : 440
+      : layer === "pulse"
+        ? SYNTHESIZERS.pulse[instrument].frequency
+        : 110;
+    const duration = layer === "pulse" ? 0.22 : 0.85;
+    const intensity = layer === "pulse" ? 0.68 : 0.8;
+    const now = state.audioContext.currentTime + 0.015;
+    scheduleTone(layer, instrument, frequency, duration, intensity, now, 0.6, state.previewGain);
+    if (layer === "pulse" && instrument === "heartbeat") {
+      scheduleTone(layer, instrument, frequency * 0.88, 0.18, 0.48, now + 0.12, 0.6, state.previewGain);
+    }
+    button.textContent = "Playing preview";
+    button.disabled = true;
+    window.setTimeout(() => {
+      button.textContent = "Preview";
+      button.disabled = false;
+    }, 1000);
+  } catch (error) {
+    setPlaybackStatus(error.message || "Sound preview could not be started.", true);
+  }
 }
 
 function drawWaveform() {
