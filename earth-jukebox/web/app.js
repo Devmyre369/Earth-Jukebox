@@ -167,6 +167,46 @@ function updateYearWindowLabel() {
   elements.yearWindowLabel.textContent = `${start} — ${end}`;
 }
 
+function fftInPlace(real, imaginary) {
+  const length = real.length;
+  for (let index = 1, reversed = 0; index < length; index += 1) {
+    let bit = length >> 1;
+    while (reversed & bit) {
+      reversed ^= bit;
+      bit >>= 1;
+    }
+    reversed ^= bit;
+    if (index < reversed) {
+      [real[index], real[reversed]] = [real[reversed], real[index]];
+      [imaginary[index], imaginary[reversed]] = [imaginary[reversed], imaginary[index]];
+    }
+  }
+
+  for (let size = 2; size <= length; size *= 2) {
+    const halfSize = size / 2;
+    const angle = (-2 * Math.PI) / size;
+    const stepReal = Math.cos(angle);
+    const stepImaginary = Math.sin(angle);
+    for (let start = 0; start < length; start += size) {
+      let weightReal = 1;
+      let weightImaginary = 0;
+      for (let offset = 0; offset < halfSize; offset += 1) {
+        const even = start + offset;
+        const odd = even + halfSize;
+        const productReal = real[odd] * weightReal - imaginary[odd] * weightImaginary;
+        const productImaginary = real[odd] * weightImaginary + imaginary[odd] * weightReal;
+        real[odd] = real[even] - productReal;
+        imaginary[odd] = imaginary[even] - productImaginary;
+        real[even] += productReal;
+        imaginary[even] += productImaginary;
+        const nextWeightReal = weightReal * stepReal - weightImaginary * stepImaginary;
+        weightImaginary = weightReal * stepImaginary + weightImaginary * stepReal;
+        weightReal = nextWeightReal;
+      }
+    }
+  }
+}
+
 function setYearWindow(startIndex, endIndex) {
   const last = state.years.length - 1;
   state.startYearIndex = Math.max(0, Math.min(startIndex, last));
@@ -220,16 +260,13 @@ function calculateClimateSpectrum() {
     const detrended = values.map(
       (value, index) => (value - meanValue - slope * (index - meanTime)) * windowValues[index],
     );
+    const real = detrended;
+    const imaginary = new Float64Array(segmentLength);
+    fftInPlace(real, imaginary);
 
     for (let bin = 0; bin <= segmentLength / 2; bin += 1) {
-      let real = 0;
-      let imaginary = 0;
-      for (let index = 0; index < segmentLength; index += 1) {
-        const angle = (2 * Math.PI * bin * index) / segmentLength;
-        real += detrended[index] * Math.cos(angle);
-        imaginary -= detrended[index] * Math.sin(angle);
-      }
-      let power = (real * real + imaginary * imaginary) / (sampleRate * windowEnergy);
+      let power =
+        (real[bin] * real[bin] + imaginary[bin] * imaginary[bin]) / (sampleRate * windowEnergy);
       if (bin !== 0 && bin !== segmentLength / 2) power *= 2;
       powers[bin] += power;
     }
