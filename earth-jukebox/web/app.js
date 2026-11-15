@@ -42,6 +42,7 @@ const elements = {
   audioSignalState: document.querySelector("#audio-signal-state"),
   audioClock: document.querySelector("#audio-clock"),
   climateSpectrumCanvas: document.querySelector("#climate-spectrum-canvas"),
+  spectrumWindowInfo: document.querySelector("#spectrum-window-info"),
   annualCanvas: document.querySelector("#annual-canvas"),
   seasonalCanvas: document.querySelector("#seasonal-canvas"),
   trendValue: document.querySelector("#trend-value"),
@@ -249,6 +250,8 @@ function calculateClimateSpectrum() {
   const segmentLength = Math.min(256, 2 ** Math.floor(Math.log2(longestRun)));
   if (segmentLength < 32) {
     state.powerSpectrum = [];
+    elements.spectrumWindowInfo.textContent =
+      "Select a longer uninterrupted monthly range (at least 32 observations) to calculate the spectrum.";
     return;
   }
 
@@ -295,6 +298,9 @@ function calculateClimateSpectrum() {
     frequency: (bin * sampleRate) / segmentLength,
     density: segmentCount ? power / segmentCount : 0,
   }));
+  elements.spectrumWindowInfo.textContent =
+    `${segmentLength}-month Hann windows · ${hop}-month overlap · ${segmentCount} windows · ` +
+    `Δf ${(sampleRate / segmentLength).toFixed(4)} cycles/year`;
 }
 
 function calculateClimateSummaries() {
@@ -1477,6 +1483,16 @@ window.addEventListener("resize", () => {
     drawWaveform();
     drawAudioSpectrum();
     drawAudioSpectrogramRow();
+  }
+});
+
+window.addEventListener("pagehide", () => {
+  clearTimer();
+  if (state.audioFrame) window.cancelAnimationFrame(state.audioFrame);
+  if (state.audioContext && state.audioContext.state !== "closed") {
+    state.audioContext.close().catch((error) => {
+      console.error("Could not close the Web Audio context cleanly.", error);
+    });
   }
 });
 
