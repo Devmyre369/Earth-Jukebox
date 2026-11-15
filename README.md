@@ -29,3 +29,5 @@ An audio-first scientific exploration platform that transforms NASA Earth observ
 Level 1: Core Module
 
 C1: Earth Data Foundation
+ contributors--  devansh 
+ 
