@@ -614,9 +614,7 @@ function drawTimeline() {
   const records = visibleRecords();
   if (records.length === 0) return;
 
-  const padding = { top: 28, right: 3, bottom: 12, left: 3 };
-  padding.left = 38;
-  padding.right = 8;
+  const padding = { top: 28, right: 8, bottom: 16, left: 38 };
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
   const range = state.maximum - state.minimum || 1;
@@ -879,6 +877,14 @@ function drawAnnualChart() {
   context.textAlign = "center";
   context.fillText(String(yearMin), x(yearMin), height - 6);
   context.fillText(String(yearMax), x(yearMax), height - 6);
+  context.textAlign = "right";
+  context.fillText("YEAR", width - padding.right, height - 6);
+  context.save();
+  context.translate(10, height / 2);
+  context.rotate(-Math.PI / 2);
+  context.textAlign = "center";
+  context.fillText("ANNUAL MEAN ANOMALY (°C)", 0, 0);
+  context.restore();
 }
 
 function drawSeasonalChart() {
