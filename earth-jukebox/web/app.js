@@ -322,12 +322,13 @@ function calculateClimateSummaries() {
     count: value.count,
   }));
 
-  const count = state.annualMeans.length;
-  const meanYear = state.annualMeans.reduce((sum, item) => sum + item.year, 0) / (count || 1);
-  const meanAnomaly = state.annualMeans.reduce((sum, item) => sum + item.mean, 0) / (count || 1);
+  const completeYears = state.annualMeans.filter((item) => item.count === 12);
+  const count = completeYears.length;
+  const meanYear = completeYears.reduce((sum, item) => sum + item.year, 0) / (count || 1);
+  const meanAnomaly = completeYears.reduce((sum, item) => sum + item.mean, 0) / (count || 1);
   let covariance = 0;
   let variance = 0;
-  for (const item of state.annualMeans) {
+  for (const item of completeYears) {
     covariance += (item.year - meanYear) * (item.mean - meanAnomaly);
     variance += (item.year - meanYear) ** 2;
   }
@@ -854,7 +855,8 @@ function drawAnnualChart() {
     context.globalAlpha = 1;
   }
 
-  const regression = regressionFor(values);
+  const regressionValues = values.filter((item) => item.count === 12);
+  const regression = regressionFor(regressionValues.length > 1 ? regressionValues : values);
   context.beginPath();
   context.moveTo(x(yearMin), y(regression.intercept + regression.slope * yearMin));
   context.lineTo(x(yearMax), y(regression.intercept + regression.slope * yearMax));

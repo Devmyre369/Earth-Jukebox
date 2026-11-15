@@ -224,13 +224,13 @@
                 <canvas id="seasonal-canvas" role="img" aria-label="Derived mean anomaly by calendar month"></canvas>
               </div>
               <div class="trend-readout">
-                <span class="axis-label">SIMPLE OLS SLOPE</span>
+                <span class="axis-label">OLS SLOPE · COMPLETE YEARS</span>
                 <strong id="trend-value">—</strong>
-                <span>°C / decade across available annual means</span>
-                <small>Descriptive linear fit; not an attribution or projection.</small>
+                <span>°C / decade across full calendar years</span>
+                <small>Partial years are shown, but excluded from the fit.</small>
               </div>
             </div>
-            <p class="viz-note">Annual averages and the ordinary least-squares trend are calculated from available NASA monthly values. The seasonal comparison is a derived calendar-month mean over the selected year window.</p>
+            <p class="viz-note">Annual averages use the months available in each NASA calendar year. The ordinary least-squares slope uses complete calendar years only. The seasonal comparison is a derived calendar-month mean over the selected year window.</p>
           </article>
 
           <article class="viz-panel layers-panel" aria-labelledby="layers-heading">

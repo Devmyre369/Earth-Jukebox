@@ -40,7 +40,7 @@ The static build uses only Python's standard library. The optional JSON regenera
 - One selected observation synchronizes the climate surface, timeline, current reading, audio parameter readouts, and sound. Year-range controls filter the visual analyses; they do not alter or fabricate the source record.
 - Live waveform, audio spectrum, and rolling spectrogram are read from a Web Audio `AnalyserNode` connected to the audible output.
 - Temperature power spectrum uses a Welch periodogram: contiguous monthly runs only, per-segment linear detrending, Hann windows up to 256 months, 50% overlap, and averaged one-sided power spectral density. Frequency is cycles/year, not audio Hz; density is °C²/(cycle/year).
-- Annual averages use the available observations in each displayed year; calendar-month averages are derived from available values. A simple OLS fit across annual averages is labeled as a descriptive indicator, not attribution or projection.
+- Annual averages use the available observations in each displayed year; calendar-month averages are derived from available values. A simple OLS slope uses complete calendar years only, excluding partial years; it is a descriptive indicator, not attribution or projection.
 - Click the annual or calendar-month charts to select the corresponding closest actual monthly record. Full-screen buttons, reset camera, mesh/observation visibility, and 3D surface/bar views are available.
 - Play, pause/resume, stop, seek, playback speeds (0.5×–4×), and volume controls.
 - Responsive desktop and mobile layouts, keyboard-operable controls, and a visible first-30-seconds demo flow.
