@@ -615,6 +615,8 @@ function drawTimeline() {
   if (records.length === 0) return;
 
   const padding = { top: 28, right: 3, bottom: 12, left: 3 };
+  padding.left = 38;
+  padding.right = 8;
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
   const range = state.maximum - state.minimum || 1;
@@ -634,6 +636,15 @@ function drawTimeline() {
     context.lineTo(width - padding.right, zeroY);
     context.stroke();
     context.setLineDash([]);
+  }
+  context.font = "8px Consolas, monospace";
+  context.textAlign = "right";
+  for (const value of [state.maximum, 0, state.minimum]) {
+    if (value !== 0 && value > 0 && state.minimum > 0) continue;
+    if (value !== 0 && value < 0 && state.maximum < 0) continue;
+    const position = y(value);
+    context.fillStyle = value === 0 ? "#a3aabc" : "#7f879a";
+    context.fillText(`${value > 0 ? "+" : ""}${value.toFixed(1)}`, padding.left - 5, position + 3);
   }
 
   context.beginPath();
@@ -774,8 +785,15 @@ function drawClimateSpectrum() {
   context.save();
   context.translate(12, height / 2);
   context.rotate(-Math.PI / 2);
-  context.fillText("POWER DENSITY · LOG SCALE", 0, 0);
+  context.fillText("PSD °C² / (CYCLE/YEAR) · LOG", 0, 0);
   context.restore();
+  context.font = "7px Consolas, monospace";
+  context.textAlign = "right";
+  for (const logPower of [maxLog, (maxLog + minLog) / 2, minLog]) {
+    const position = padding.top + ((maxLog - logPower) / (maxLog - minLog || 1)) * plotHeight;
+    context.fillStyle = "#858c9d";
+    context.fillText((10 ** logPower).toExponential(1), padding.left - 5, position + 3);
+  }
 }
 
 function regressionFor(values) {
@@ -929,6 +947,7 @@ function setSelectedIndex(index, soundIfPlaying) {
   if (state.playing && soundIfPlaying) {
     playCurrentRecord();
     scheduleNext();
+    setPlaybackStatus(`Playing ${formatMonth(state.records[state.index])}.`);
   }
 }
 
@@ -1081,6 +1100,7 @@ async function startPlayback() {
 function pausePlayback() {
   state.playing = false;
   clearTimer();
+  stopActiveNotes();
   updatePlayButton();
   setPlaybackStatus(`Paused at ${formatMonth(state.records[state.index])}.`);
 }
