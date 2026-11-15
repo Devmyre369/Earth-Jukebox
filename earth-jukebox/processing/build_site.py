@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import shutil
 from pathlib import Path
 
@@ -27,9 +28,22 @@ def validate_dataset(dataset: object) -> None:
             raise ValueError(f"NASA dataset record {index} must be an object.")
         if not isinstance(record.get("time"), str) or record["time"] <= previous_time:
             raise ValueError(f"NASA dataset record {index} is not in chronological order.")
-        if not isinstance(record.get("year"), int) or not 1 <= record.get("month", 0) <= 12:
+        year = record.get("year")
+        month = record.get("month")
+        if (
+            not isinstance(year, int)
+            or isinstance(year, bool)
+            or not isinstance(month, int)
+            or isinstance(month, bool)
+            or not 1 <= month <= 12
+        ):
             raise ValueError(f"NASA dataset record {index} has an invalid date.")
-        if not isinstance(record.get("anomaly_celsius"), (int, float)):
+        anomaly = record.get("anomaly_celsius")
+        if (
+            not isinstance(anomaly, (int, float))
+            or isinstance(anomaly, bool)
+            or not math.isfinite(anomaly)
+        ):
             raise ValueError(f"NASA dataset record {index} has no numeric anomaly.")
         previous_time = record["time"]
 

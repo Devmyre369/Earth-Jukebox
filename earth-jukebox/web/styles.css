@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
-
 :root {
   color-scheme: dark;
   --background: #10120f;
@@ -12,9 +10,9 @@
   --accent: #d3f36b;
   --accent-deep: #b7dc4e;
   --warm: #ff9a6b;
-  --mono: "DM Mono", "Courier New", monospace;
-  --sans: "DM Sans", "Segoe UI", sans-serif;
-  --display: "Space Grotesk", "Segoe UI", sans-serif;
+  --mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  --sans: "Segoe UI", Arial, sans-serif;
+  --display: "Segoe UI", Arial, sans-serif;
 }
 
 * {

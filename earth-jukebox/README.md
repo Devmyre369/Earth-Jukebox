@@ -46,7 +46,7 @@ The static build uses only Python's standard library. The optional JSON regenera
 
 - **Dataset:** NASA GISTEMP v4 global mean land–ocean temperature anomalies, in °C relative to 1951–1980; monthly observations from the preserved source data.
 - **Processing:** The original NASA CSV remains in `data/raw/`. The standardized JSON in `data/processed/` excludes missing observations; it does not replace them with zero or interpolate values.
-- **Sonification:** Pitch, tremolo rate, and filter cutoff are artistic mappings normalized over the observed record's minimum and maximum. They are not additional scientific measurements.
+- **Sonification:** Across the observed record's minimum-to-maximum range, pitch maps exponentially from 220 to about 562 Hz; tremolo rate and filter cutoff map linearly from 1.5–6.5 Hz and 450–3,500 Hz. These are artistic mappings, not additional scientific measurements.
 - **Geography:** This is a global series without geographic resolution; the application does not imply location or use spatial audio.
 - **Video:** The NASA Climate Spiral asset is not synchronized to the audio or timeline. No frame-to-month timing is inferred.
 - **Browser:** Audio requires a browser with Web Audio support and a user gesture to start. Browsers may require serving the files over HTTP rather than opening the HTML directly.
