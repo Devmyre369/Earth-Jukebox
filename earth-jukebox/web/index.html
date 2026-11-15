@@ -154,7 +154,7 @@
                 </label>
               </div>
               <label class="volume-control" for="volume">
-                <span>Volume</span>
+                <span>Master volume</span>
                 <input id="volume" type="range" min="0" max="1" value="0.55" step="0.01" aria-label="Volume" disabled>
               </label>
               <p class="playback-status" id="playback-status" aria-live="polite">
@@ -162,6 +162,115 @@
               </p>
             </div>
           </div>
+        </section>
+
+        <section class="sound-studio" aria-labelledby="sound-studio-heading">
+          <div class="studio-heading">
+            <div>
+              <p class="panel-eyebrow">ARTISTIC SOUND DESIGN · SCIENTIFIC MAPPING UNCHANGED</p>
+              <h2 id="sound-studio-heading">EARTH SOUND STUDIO</h2>
+              <p class="panel-subtitle">Choose how the measurements sound. Instruments and palettes never alter the NASA data or its mappings.</p>
+            </div>
+            <div class="studio-actions">
+              <button id="mute-button" class="studio-button" type="button" aria-pressed="false" disabled>Mute</button>
+              <button id="reset-sound" class="studio-button" type="button" disabled>Reset sound</button>
+            </div>
+          </div>
+
+          <div class="palette-row">
+            <label class="studio-field" for="sound-palette">
+              <span>Sound palette</span>
+              <select id="sound-palette" disabled>
+                <option value="scientific">Scientific</option>
+                <option value="ambient">Ambient</option>
+                <option value="orchestral">Orchestral</option>
+                <option value="electronic">Electronic</option>
+                <option value="cinematic">Cinematic</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <p id="palette-description" class="palette-description">Clean, restrained layers for interpreting the measurements.</p>
+          </div>
+
+          <div class="studio-layers">
+            <article class="studio-layer" data-sound-layer="melody">
+              <div class="studio-layer-head">
+                <span class="studio-number">01</span>
+                <div><h3>EARTH MELODY</h3><p>Anomaly → pitch</p></div>
+              </div>
+              <label class="studio-field" for="melody-instrument"><span>Instrument</span>
+                <select id="melody-instrument" data-instrument="melody" disabled>
+                  <option value="piano">Piano</option><option value="synth-lead">Synth Lead</option><option value="bell">Bell</option><option value="soft-strings">Soft Strings</option><option value="mallet">Mallet Instrument</option>
+                </select>
+              </label>
+              <label class="studio-slider" for="melody-level"><span>Layer level <output id="melody-level-value">80%</output></span>
+                <input id="melody-level" data-layer-level="melody" type="range" min="0" max="1" value="0.8" step="0.01" disabled>
+              </label>
+              <div class="studio-layer-actions">
+                <label class="layer-toggle"><input id="melody-enabled" data-layer-enabled="melody" type="checkbox" checked disabled> Enabled</label>
+                <button class="studio-button" data-solo-layer="melody" type="button" aria-pressed="false" disabled>Solo</button>
+                <button class="studio-button" data-preview-layer="melody" type="button" disabled>Preview</button>
+              </div>
+            </article>
+
+            <article class="studio-layer" data-sound-layer="pulse">
+              <div class="studio-layer-head">
+                <span class="studio-number">02</span>
+                <div><h3>EARTH PULSE</h3><p>Monthly change → rhythm &amp; intensity</p></div>
+              </div>
+              <label class="studio-field" for="pulse-instrument"><span>Instrument</span>
+                <select id="pulse-instrument" data-instrument="pulse" disabled>
+                  <option value="soft-percussion">Soft Percussion</option><option value="electronic-percussion">Electronic Percussion</option><option value="wooden-ticks">Wooden Ticks</option><option value="heartbeat">Soft Heartbeat-style Pulse</option><option value="minimal-beat">Minimal Electronic Beat</option>
+                </select>
+              </label>
+              <label class="studio-slider" for="pulse-level"><span>Layer level <output id="pulse-level-value">60%</output></span>
+                <input id="pulse-level" data-layer-level="pulse" type="range" min="0" max="1" value="0.6" step="0.01" disabled>
+              </label>
+              <div class="studio-layer-actions">
+                <label class="layer-toggle"><input id="pulse-enabled" data-layer-enabled="pulse" type="checkbox" checked disabled> Enabled</label>
+                <button class="studio-button" data-solo-layer="pulse" type="button" aria-pressed="false" disabled>Solo</button>
+                <button class="studio-button" data-preview-layer="pulse" type="button" disabled>Preview</button>
+              </div>
+            </article>
+
+            <article class="studio-layer" data-sound-layer="atmosphere">
+              <div class="studio-layer-head">
+                <span class="studio-number">03</span>
+                <div><h3>EARTH ATMOSPHERE</h3><p>Trailing variability → harmonic texture</p></div>
+              </div>
+              <label class="studio-field" for="atmosphere-instrument"><span>Instrument</span>
+                <select id="atmosphere-instrument" data-instrument="atmosphere" disabled>
+                  <option value="ambient-pad">Ambient Synth Pad</option><option value="atmospheric-strings">Atmospheric Strings</option><option value="harmonic-drone">Harmonic Drone</option><option value="evolving-texture">Evolving Synth Texture</option><option value="cinematic-texture">Soft Cinematic Texture</option>
+                </select>
+              </label>
+              <label class="studio-slider" for="atmosphere-level"><span>Layer level <output id="atmosphere-level-value">48%</output></span>
+                <input id="atmosphere-level" data-layer-level="atmosphere" type="range" min="0" max="1" value="0.48" step="0.01" disabled>
+              </label>
+              <div class="studio-layer-actions">
+                <label class="layer-toggle"><input id="atmosphere-enabled" data-layer-enabled="atmosphere" type="checkbox" checked disabled> Enabled</label>
+                <button class="studio-button" data-solo-layer="atmosphere" type="button" aria-pressed="false" disabled>Solo</button>
+                <button class="studio-button" data-preview-layer="atmosphere" type="button" disabled>Preview</button>
+              </div>
+            </article>
+          </div>
+
+          <div class="studio-bottom">
+            <label class="studio-slider master-slider" for="studio-master-volume"><span>Master output <output id="studio-master-value">55%</output></span>
+              <input id="studio-master-volume" type="range" min="0" max="1" value="0.55" step="0.01" disabled>
+            </label>
+            <fieldset class="effects-controls">
+              <legend>Optional effects</legend>
+              <label class="effect-toggle"><input id="reverb-enabled" type="checkbox" disabled> Reverb</label>
+              <label class="studio-slider effect-slider" for="reverb-level"><span>Amount <output id="reverb-level-value">18%</output></span>
+                <input id="reverb-level" type="range" min="0" max="0.35" value="0.18" step="0.01" disabled>
+              </label>
+              <label class="effect-toggle"><input id="delay-enabled" type="checkbox" disabled> Delay</label>
+              <label class="studio-slider effect-slider" for="delay-level"><span>Amount <output id="delay-level-value">8%</output></span>
+                <input id="delay-level" type="range" min="0" max="0.25" value="0.08" step="0.01" disabled>
+              </label>
+            </fieldset>
+          </div>
+          <p class="studio-note">Preview auditions a sound-design tone outside the data timeline. Live layer controls and effects transition smoothly; the measured waveform, spectrum, and spectrogram continue to show actual output.</p>
         </section>
 
         <section class="viz-grid" aria-label="Scientific analysis panels">
@@ -245,15 +354,15 @@
             </div>
             <div class="layer-readouts" aria-live="polite">
               <div class="engine-layer">
-                <span class="engine-index">01</span><div class="engine-main"><strong>EARTH MELODY</strong><span>Triangle oscillator · pitch</span></div>
+                <span class="engine-index">01</span><div class="engine-main"><strong>EARTH MELODY</strong><span id="melody-instrument-name">Piano · anomaly to pitch</span></div>
                 <output id="melody-value">—</output><div class="meter"><i id="melody-meter"></i></div>
               </div>
               <div class="engine-layer">
-                <span class="engine-index">02</span><div class="engine-main"><strong>EARTH PULSE</strong><span>Sine LFO · 0.22 gain modulation</span></div>
+                <span class="engine-index">02</span><div class="engine-main"><strong>EARTH PULSE</strong><span id="pulse-instrument-name">Wooden Ticks · monthly change to rhythm</span></div>
                 <output id="pulse-value">—</output><div class="meter"><i id="pulse-meter"></i></div>
               </div>
               <div class="engine-layer">
-                <span class="engine-index">03</span><div class="engine-main"><strong>EARTH ATMOSPHERE</strong><span>Low-pass filter · timbre</span></div>
+                <span class="engine-index">03</span><div class="engine-main"><strong>EARTH ATMOSPHERE</strong><span id="atmosphere-instrument-name">Harmonic Drone · variability to texture</span></div>
                 <output id="atmosphere-value">—</output><div class="meter"><i id="atmosphere-meter"></i></div>
               </div>
               <div class="engine-layer engine-layer-disabled">
@@ -261,7 +370,7 @@
                 <output>INACTIVE</output><div class="meter"><i></i></div>
               </div>
             </div>
-            <p class="viz-note">Melody, pulse, and atmosphere values are read from the same anomaly-to-audio mapping that generates the sound. Earth Drift is not implemented.</p>
+            <p class="viz-note">Readouts use the same NASA-derived inputs as the audio: anomaly for pitch, consecutive monthly change for pulse, and trailing contiguous variability for atmosphere. Palette and instrument changes affect timbre only. Earth Drift is not implemented.</p>
           </article>
         </section>
 
@@ -283,7 +392,7 @@
               <span class="layer-number">02</span>
               <div>
                 <h3>Pulse</h3>
-                <p>The tremolo speeds up as the anomaly moves higher in the series.</p>
+                <p>Changes between consecutive observed months control pulse rate and intensity. Missing months are never bridged.</p>
               </div>
               <span class="layer-mark pulse-mark" aria-hidden="true"></span>
             </article>
@@ -291,7 +400,7 @@
               <span class="layer-number">03</span>
               <div>
                 <h3>Timbre</h3>
-                <p>The tone's filter brightens as the anomaly moves higher.</p>
+                <p>The standard deviation of up to 12 contiguous monthly anomalies controls harmonic richness and filter brightness.</p>
               </div>
               <span class="layer-mark timbre-mark" aria-hidden="true"></span>
             </article>
@@ -333,16 +442,17 @@
             <div>
               <h3>The sound mapping</h3>
               <p>
-                For each available month, the anomaly is normalized against the minimum and
-                maximum values in this record. That normalized value controls note frequency,
-                tremolo rate, and low-pass filter cutoff. The chart and audio use the same selected
-                record, and playback speed changes the time between observations.
+                Melody pitch is mapped exponentially from the dataset's minimum-to-maximum anomaly
+                range. Pulse rate and intensity are based on the absolute change from the previous
+                consecutive observed month. Atmosphere timbre follows the standard deviation of up
+                to 12 contiguous observations ending at the selected month. A gap is never bridged;
+                a layer with insufficient prior observations stays silent.
               </p>
               <p>
-                At the record minimum, the mapping starts at 220 Hz, 1.5 tremolo pulses per second,
-                and a 450 Hz filter cutoff. At the maximum, it reaches about 562 Hz, 6.5 pulses per
-                second, and a 3,500 Hz cutoff. Values between those endpoints are mapped linearly,
-                except pitch, which follows an exponential frequency scale.
+                The sound palette and instruments change only synthesis, not the measurement-to-sound
+                mapping. Layers can be enabled, mixed, soloed, muted, previewed, and processed with
+                optional reverb or delay. A preview is an isolated sound-design audition, not a NASA
+                observation or a timeline event. Master dynamics compression limits peaks.
               </p>
               <p>
                 The climate power spectrum uses Welch's averaged periodogram on contiguous monthly
@@ -364,7 +474,7 @@
           <ol>
             <li><span>00–10s</span><p>Start at the beginning and read the selected anomaly and reference period.</p></li>
             <li><span>10–20s</span><p>Press <strong>Play Earth</strong>. Each note and chart position represents the same month.</p></li>
-            <li><span>20–30s</span><p>Listen for higher notes and brighter, faster pulses as the mapped anomaly rises.</p></li>
+            <li><span>20–30s</span><p>Try a different palette, then hear higher notes follow anomalies and pulse activity follow month-to-month change.</p></li>
           </ol>
         </section>
       </main>
