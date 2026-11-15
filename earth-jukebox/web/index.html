@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#101014">
     <meta
       name="description"
-      content="Listen to NASA GISTEMP global temperature anomalies as an interactive, data-driven sonification."
+      content="Listen to the Earth — explore global temperature, CO₂, sea level, deforestation, wildfires and precipitation as interactive scientific sonifications."
     >
     <title>EARTH JUKEBOX — Hear the climate record</title>
     <link rel="stylesheet" href="./styles.css">
@@ -25,463 +25,1288 @@
         </div>
       </header>
 
+      <nav class="phenomenon-nav" id="phenomenon-nav" aria-label="Earth phenomena selector">
+        <div class="phenomenon-nav-inner">
+          <span class="phenomenon-nav-label">EXPLORE</span>
+          <div class="phenomenon-tabs" role="tablist" aria-label="Earth phenomena">
+            <button class="phenomenon-tab is-active" role="tab" aria-selected="true" data-phenomenon="temperature" id="tab-temperature" aria-controls="workspace-temperature">
+              <span class="phenomenon-tab-icon">🌡️</span>
+              <span class="phenomenon-tab-name">Global Temperature</span>
+              <span class="phenomenon-tab-badge is-live">LIVE DATA</span>
+            </button>
+            <button class="phenomenon-tab" role="tab" aria-selected="false" data-phenomenon="ocean" id="tab-ocean" aria-controls="workspace-ocean">
+              <span class="phenomenon-tab-icon">🌊</span>
+              <span class="phenomenon-tab-name">Ocean Currents</span>
+              <span class="phenomenon-tab-badge is-beta">BETA</span>
+            </button>
+            <button class="phenomenon-tab" role="tab" aria-selected="false" data-phenomenon="co2" id="tab-co2" aria-controls="workspace-co2">
+              <span class="phenomenon-tab-icon">💨</span>
+              <span class="phenomenon-tab-name">Atmospheric CO₂</span>
+              <span class="phenomenon-tab-badge is-beta">BETA</span>
+            </button>
+            <button class="phenomenon-tab" role="tab" aria-selected="false" data-phenomenon="sealevel" id="tab-sealevel" aria-controls="workspace-sealevel">
+              <span class="phenomenon-tab-icon">🌊</span>
+              <span class="phenomenon-tab-name">Sea-Level Change</span>
+              <span class="phenomenon-tab-badge is-beta">BETA</span>
+            </button>
+            <button class="phenomenon-tab" role="tab" aria-selected="false" data-phenomenon="deforestation" id="tab-deforestation" aria-controls="workspace-deforestation">
+              <span class="phenomenon-tab-icon">🌳</span>
+              <span class="phenomenon-tab-name">Deforestation</span>
+              <span class="phenomenon-tab-badge is-beta">BETA</span>
+            </button>
+            <button class="phenomenon-tab" role="tab" aria-selected="false" data-phenomenon="wildfires" id="tab-wildfires" aria-controls="workspace-wildfires">
+              <span class="phenomenon-tab-icon">🔥</span>
+              <span class="phenomenon-tab-name">Wildfires</span>
+              <span class="phenomenon-tab-badge is-beta">BETA</span>
+            </button>
+            <button class="phenomenon-tab" role="tab" aria-selected="false" data-phenomenon="rain" id="tab-rain" aria-controls="workspace-rain">
+              <span class="phenomenon-tab-icon">🌧️</span>
+              <span class="phenomenon-tab-name">Precipitation</span>
+              <span class="phenomenon-tab-badge is-beta">BETA</span>
+            </button>
+          </div>
+        </div>
+      </nav>
+
       <main id="top">
-        <section class="intro" aria-labelledby="page-title">
-          <p class="eyebrow"><span class="eyebrow-line"></span> A NASA GISTEMP sonification</p>
-          <h1 id="page-title">A changing climate,<br><span>heard month by month.</span></h1>
-          <p class="intro-copy">
-            Each note represents a real monthly global temperature anomaly in NASA's record.
-            Follow the timeline as the measurements become a sound you can explore.
-          </p>
-          <p class="integrity-note">
-            <span class="note-icon" aria-hidden="true">i</span>
-            This is a sonification of measurements, not a recording of the planet.
-          </p>
-        </section>
+        <!-- ══════════════════════════════════════════════════════════
+             WORKSPACE: GLOBAL TEMPERATURE (default active)
+        ══════════════════════════════════════════════════════════ -->
+        <div id="workspace-temperature" class="phenomenon-workspace is-active" role="tabpanel" aria-labelledby="tab-temperature">
 
-        <section class="surface-panel viz-panel" id="climate-surface-panel" aria-labelledby="surface-heading">
-          <div class="viz-panel-head">
-            <div>
-              <p class="panel-eyebrow"><span class="live-indicator" aria-hidden="true"></span> NASA GISTEMP v4 · OBSERVED MONTHLY DATA</p>
-              <h2 id="surface-heading">Climate surface</h2>
-              <p class="panel-subtitle">Year × calendar month × temperature anomaly. Missing observations remain gaps.</p>
-            </div>
-            <div class="surface-actions">
-              <label class="compact-select">
-                <span>View</span>
-                <select id="surface-mode" aria-label="Climate surface view">
-                  <option value="surface">3D surface</option>
-                  <option value="bars">3D monthly bars</option>
-                </select>
-              </label>
-              <button id="surface-reset" class="icon-button" type="button" aria-label="Reset climate visualization camera" title="Reset camera">Reset view</button>
-              <button id="surface-fullscreen" class="icon-button" type="button" aria-label="Toggle full screen visualization" title="Full screen">⛶</button>
-            </div>
-          </div>
-          <div class="surface-body">
-            <div class="surface-stage">
-              <canvas id="surface-canvas" role="img" aria-label="Interactive three-dimensional NASA GISTEMP monthly anomaly surface; drag to rotate, scroll to zoom, shift-drag to pan"></canvas>
-              <div id="surface-tooltip" class="surface-tooltip" role="status" hidden></div>
-              <div class="surface-hint"><span>DRAG TO ROTATE</span><span>SCROLL TO ZOOM</span><span>SHIFT + DRAG TO PAN</span></div>
-            </div>
-            <aside class="surface-legend" aria-label="Anomaly color scale">
-              <span class="axis-label">ANOMALY (°C)</span>
-              <div class="legend-bar"></div>
-              <div class="legend-values"><span id="legend-maximum">—</span><span>0</span><span id="legend-minimum">—</span></div>
-              <span class="axis-label">CYAN · BELOW ZERO<br>CRIMSON · ABOVE ZERO</span>
-            </aside>
-          </div>
-          <div class="surface-footer">
-            <div class="surface-readout"><span>SELECTED OBSERVATION</span><strong id="surface-readout">—</strong></div>
-            <div class="surface-layers">
-              <label><input id="show-mesh" type="checkbox" checked> Mesh</label>
-              <label><input id="show-points" type="checkbox" checked> Observations</label>
-            </div>
-            <div class="year-window">
-              <span class="axis-label">VISIBLE YEARS <strong id="year-window-label">—</strong></span>
-              <label class="sr-only" for="year-start">First displayed year</label>
-              <input id="year-start" type="range" min="0" max="0" value="0" disabled>
-              <label class="sr-only" for="year-end">Last displayed year</label>
-              <input id="year-end" type="range" min="0" max="0" value="0" disabled>
-            </div>
-          </div>
-        </section>
+          <section class="intro" aria-labelledby="page-title">
+            <p class="eyebrow"><span class="eyebrow-line"></span> A NASA GISTEMP sonification</p>
+            <h1 id="page-title">A changing climate,<br><span>heard month by month.</span></h1>
+            <p class="intro-copy">
+              Each note represents a real monthly global temperature anomaly in NASA's record.
+              Follow the timeline as the measurements become a sound you can explore.
+            </p>
+            <p class="integrity-note">
+              <span class="note-icon" aria-hidden="true">i</span>
+              This is a sonification of measurements, not a recording of the planet.
+            </p>
+          </section>
 
-        <section class="player" aria-label="Climate record player">
-          <div class="player-topline">
-            <div class="dataset-label">
-              <span class="live-indicator" aria-hidden="true"></span>
-            <span>MONTHLY TEMPERATURE ANOMALY · TIMELINE</span>
-            </div>
-            <span class="dataset-range" id="dataset-range">Preparing record…</span>
-          </div>
-
-          <div class="player-grid">
-            <div class="visual-panel">
-              <div class="reading">
-                <div>
-                  <p class="reading-label" id="reading-date">Waiting for data</p>
-                  <p class="reading-value" id="reading-value">--<span> °C</span></p>
-                </div>
-                <p class="reading-context">relative to<br>1951–1980</p>
+          <section class="surface-panel viz-panel" id="climate-surface-panel" aria-labelledby="surface-heading">
+            <div class="viz-panel-head">
+              <div>
+                <p class="panel-eyebrow"><span class="live-indicator" aria-hidden="true"></span> NASA GISTEMP v4 · OBSERVED MONTHLY DATA</p>
+                <h2 id="surface-heading">Climate surface</h2>
+                <p class="panel-subtitle">Year × calendar month × temperature anomaly. Missing observations remain gaps.</p>
               </div>
-
-              <div class="chart-wrap">
-                <canvas
-                  id="timeline-chart"
-                  role="img"
-                  aria-label="Timeline chart of monthly NASA global temperature anomalies"
-                ></canvas>
-                <div class="chart-axis" id="chart-axis" aria-hidden="true"></div>
-              </div>
-              <input
-                id="timeline"
-                class="timeline-input"
-                type="range"
-                min="0"
-                max="0"
-                value="0"
-                step="1"
-                aria-label="Seek to a month in the NASA temperature record"
-                disabled
-              >
-              <div class="timeline-hint">
-                <span>1880</span>
-                <span id="timeline-hint-end">Scroll through the record</span>
-                <span id="timeline-end">—</span>
-              </div>
-            </div>
-
-            <div class="control-panel">
-              <p class="control-kicker">LISTEN TO THE DATA</p>
-              <p class="control-explainer">One sound for each available monthly observation.</p>
-              <button id="play-button" class="play-button" type="button" disabled>
-                <span class="play-icon" aria-hidden="true">▶</span>
-                <span id="play-label">Play Earth</span>
-              </button>
-              <div class="transport-controls">
-                <button id="stop-button" class="secondary-button" type="button" disabled>
-                  <span aria-hidden="true">■</span> Stop
-                </button>
-                <label class="speed-control">
-                  <span>Speed</span>
-                  <select id="speed-select" aria-label="Playback speed" disabled>
-                    <option value="0.5">0.5×</option>
-                    <option value="1" selected>1×</option>
-                    <option value="2">2×</option>
-                    <option value="4">4×</option>
+              <div class="surface-actions">
+                <label class="compact-select">
+                  <span>View</span>
+                  <select id="surface-mode" aria-label="Climate surface view">
+                    <option value="surface">3D surface</option>
+                    <option value="bars">3D monthly bars</option>
                   </select>
                 </label>
+                <button id="surface-reset" class="icon-button" type="button" aria-label="Reset climate visualization camera" title="Reset camera">Reset view</button>
+                <button id="surface-fullscreen" class="icon-button" type="button" aria-label="Toggle full screen visualization" title="Full screen">⛶</button>
               </div>
-              <label class="volume-control" for="volume">
-                <span>Master volume</span>
-                <input id="volume" type="range" min="0" max="1" value="0.55" step="0.01" aria-label="Volume" disabled>
-              </label>
-              <p class="playback-status" id="playback-status" aria-live="polite">
-                Loading the verified monthly record…
-              </p>
             </div>
-          </div>
-        </section>
-
-        <section class="sound-studio" aria-labelledby="sound-studio-heading">
-          <div class="studio-heading">
-            <div>
-              <p class="panel-eyebrow">ARTISTIC SOUND DESIGN · SCIENTIFIC MAPPING UNCHANGED</p>
-              <h2 id="sound-studio-heading">EARTH SOUND STUDIO</h2>
-              <p class="panel-subtitle">Choose how the measurements sound. Instruments and palettes never alter the NASA data or its mappings.</p>
-            </div>
-            <div class="studio-actions">
-              <button id="mute-button" class="studio-button" type="button" aria-pressed="false" disabled>Mute</button>
-              <button id="reset-sound" class="studio-button" type="button" disabled>Reset sound</button>
-            </div>
-          </div>
-
-          <div class="palette-row">
-            <label class="studio-field" for="sound-palette">
-              <span>Sound palette</span>
-              <select id="sound-palette" disabled>
-                <option value="scientific">Scientific</option>
-                <option value="ambient">Ambient</option>
-                <option value="orchestral">Orchestral</option>
-                <option value="electronic">Electronic</option>
-                <option value="cinematic">Cinematic</option>
-                <option value="custom">Custom</option>
-              </select>
-            </label>
-            <p id="palette-description" class="palette-description">Clean, restrained layers for interpreting the measurements.</p>
-          </div>
-
-          <div class="studio-layers">
-            <article class="studio-layer" data-sound-layer="melody">
-              <div class="studio-layer-head">
-                <span class="studio-number">01</span>
-                <div><h3>EARTH MELODY</h3><p>Anomaly → pitch</p></div>
+            <div class="surface-body">
+              <div class="surface-stage">
+                <canvas id="surface-canvas" role="img" aria-label="Interactive three-dimensional NASA GISTEMP monthly anomaly surface; drag to rotate, scroll to zoom, shift-drag to pan"></canvas>
+                <div id="surface-tooltip" class="surface-tooltip" role="status" hidden></div>
+                <div class="surface-hint"><span>DRAG TO ROTATE</span><span>SCROLL TO ZOOM</span><span>SHIFT + DRAG TO PAN</span></div>
               </div>
-              <label class="studio-field" for="melody-instrument"><span>Instrument</span>
-                <select id="melody-instrument" data-instrument="melody" disabled>
-                  <option value="piano">Piano</option><option value="synth-lead">Synth Lead</option><option value="bell">Bell</option><option value="soft-strings">Soft Strings</option><option value="mallet">Mallet Instrument</option>
+              <aside class="surface-legend" aria-label="Anomaly color scale">
+                <span class="axis-label">ANOMALY (°C)</span>
+                <div class="legend-bar"></div>
+                <div class="legend-values"><span id="legend-maximum">—</span><span>0</span><span id="legend-minimum">—</span></div>
+                <span class="axis-label">CYAN · BELOW ZERO<br>CRIMSON · ABOVE ZERO</span>
+              </aside>
+            </div>
+            <div class="surface-footer">
+              <div class="surface-readout"><span>SELECTED OBSERVATION</span><strong id="surface-readout">—</strong></div>
+              <div class="surface-layers">
+                <label><input id="show-mesh" type="checkbox" checked> Mesh</label>
+                <label><input id="show-points" type="checkbox" checked> Observations</label>
+              </div>
+              <div class="year-window">
+                <span class="axis-label">VISIBLE YEARS <strong id="year-window-label">—</strong></span>
+                <label class="sr-only" for="year-start">First displayed year</label>
+                <input id="year-start" type="range" min="0" max="0" value="0" disabled>
+                <label class="sr-only" for="year-end">Last displayed year</label>
+                <input id="year-end" type="range" min="0" max="0" value="0" disabled>
+              </div>
+            </div>
+          </section>
+
+          <section class="player" aria-label="Climate record player">
+            <div class="player-topline">
+              <div class="dataset-label">
+                <span class="live-indicator" aria-hidden="true"></span>
+              <span>MONTHLY TEMPERATURE ANOMALY · TIMELINE</span>
+              </div>
+              <span class="dataset-range" id="dataset-range">Preparing record…</span>
+            </div>
+
+            <div class="player-grid">
+              <div class="visual-panel">
+                <div class="reading">
+                  <div>
+                    <p class="reading-label" id="reading-date">Waiting for data</p>
+                    <p class="reading-value" id="reading-value">--<span> °C</span></p>
+                  </div>
+                  <p class="reading-context">relative to<br>1951–1980</p>
+                </div>
+
+                <div class="chart-wrap">
+                  <canvas
+                    id="timeline-chart"
+                    role="img"
+                    aria-label="Timeline chart of monthly NASA global temperature anomalies"
+                  ></canvas>
+                  <div class="chart-axis" id="chart-axis" aria-hidden="true"></div>
+                </div>
+                <input
+                  id="timeline"
+                  class="timeline-input"
+                  type="range"
+                  min="0"
+                  max="0"
+                  value="0"
+                  step="1"
+                  aria-label="Seek to a month in the NASA temperature record"
+                  disabled
+                >
+                <div class="timeline-hint">
+                  <span>1880</span>
+                  <span id="timeline-hint-end">Scroll through the record</span>
+                  <span id="timeline-end">—</span>
+                </div>
+              </div>
+
+              <div class="control-panel">
+                <p class="control-kicker">LISTEN TO THE DATA</p>
+                <p class="control-explainer">One sound for each available monthly observation.</p>
+                <button id="play-button" class="play-button" type="button" disabled>
+                  <span class="play-icon" aria-hidden="true">▶</span>
+                  <span id="play-label">Play Earth</span>
+                </button>
+                <div class="transport-controls">
+                  <button id="stop-button" class="secondary-button" type="button" disabled>
+                    <span aria-hidden="true">■</span> Stop
+                  </button>
+                  <label class="speed-control">
+                    <span>Speed</span>
+                    <select id="speed-select" aria-label="Playback speed" disabled>
+                      <option value="0.5">0.5×</option>
+                      <option value="1" selected>1×</option>
+                      <option value="2">2×</option>
+                      <option value="4">4×</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="volume-control" for="volume">
+                  <span>Master volume</span>
+                  <input id="volume" type="range" min="0" max="1" value="0.55" step="0.01" aria-label="Volume" disabled>
+                </label>
+                <p class="playback-status" id="playback-status" aria-live="polite">
+                  Loading the verified monthly record…
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="sound-studio" aria-labelledby="sound-studio-heading">
+            <div class="studio-heading">
+              <div>
+                <p class="panel-eyebrow">ARTISTIC SOUND DESIGN · SCIENTIFIC MAPPING UNCHANGED</p>
+                <h2 id="sound-studio-heading">EARTH SOUND STUDIO</h2>
+                <p class="panel-subtitle">Choose how the measurements sound. Instruments and palettes never alter the NASA data or its mappings.</p>
+              </div>
+              <div class="studio-actions">
+                <button id="mute-button" class="studio-button" type="button" aria-pressed="false" disabled>Mute</button>
+                <button id="reset-sound" class="studio-button" type="button" disabled>Reset sound</button>
+              </div>
+            </div>
+
+            <div class="palette-row">
+              <label class="studio-field" for="sound-palette">
+                <span>Sound palette</span>
+                <select id="sound-palette" disabled>
+                  <option value="scientific">Scientific</option>
+                  <option value="ambient">Ambient</option>
+                  <option value="orchestral">Orchestral</option>
+                  <option value="electronic">Electronic</option>
+                  <option value="cinematic">Cinematic</option>
+                  <option value="custom">Custom</option>
                 </select>
               </label>
-              <label class="studio-slider" for="melody-level"><span>Layer level <output id="melody-level-value">80%</output></span>
-                <input id="melody-level" data-layer-level="melody" type="range" min="0" max="1" value="0.8" step="0.01" disabled>
+              <p id="palette-description" class="palette-description">Clean, restrained layers for interpreting the measurements.</p>
+            </div>
+
+            <div class="studio-layers">
+              <article class="studio-layer" data-sound-layer="melody">
+                <div class="studio-layer-head">
+                  <span class="studio-number">01</span>
+                  <div><h3>EARTH MELODY</h3><p>Anomaly → pitch</p></div>
+                </div>
+                <label class="studio-field" for="melody-instrument"><span>Instrument</span>
+                  <select id="melody-instrument" data-instrument="melody" disabled>
+                    <option value="piano">Piano</option><option value="synth-lead">Synth Lead</option><option value="bell">Bell</option><option value="soft-strings">Soft Strings</option><option value="mallet">Mallet Instrument</option>
+                  </select>
+                </label>
+                <label class="studio-slider" for="melody-level"><span>Layer level <output id="melody-level-value">80%</output></span>
+                  <input id="melody-level" data-layer-level="melody" type="range" min="0" max="1" value="0.8" step="0.01" disabled>
+                </label>
+                <div class="studio-layer-actions">
+                  <label class="layer-toggle"><input id="melody-enabled" data-layer-enabled="melody" type="checkbox" checked disabled> Enabled</label>
+                  <button class="studio-button" data-solo-layer="melody" type="button" aria-pressed="false" disabled>Solo</button>
+                  <button class="studio-button" data-preview-layer="melody" type="button" disabled>Preview</button>
+                </div>
+              </article>
+
+              <article class="studio-layer" data-sound-layer="pulse">
+                <div class="studio-layer-head">
+                  <span class="studio-number">02</span>
+                  <div><h3>EARTH PULSE</h3><p>Monthly change → rhythm &amp; intensity</p></div>
+                </div>
+                <label class="studio-field" for="pulse-instrument"><span>Instrument</span>
+                  <select id="pulse-instrument" data-instrument="pulse" disabled>
+                    <option value="soft-percussion">Soft Percussion</option><option value="electronic-percussion">Electronic Percussion</option><option value="wooden-ticks">Wooden Ticks</option><option value="heartbeat">Soft Heartbeat-style Pulse</option><option value="minimal-beat">Minimal Electronic Beat</option>
+                  </select>
+                </label>
+                <label class="studio-slider" for="pulse-level"><span>Layer level <output id="pulse-level-value">60%</output></span>
+                  <input id="pulse-level" data-layer-level="pulse" type="range" min="0" max="1" value="0.6" step="0.01" disabled>
+                </label>
+                <div class="studio-layer-actions">
+                  <label class="layer-toggle"><input id="pulse-enabled" data-layer-enabled="pulse" type="checkbox" checked disabled> Enabled</label>
+                  <button class="studio-button" data-solo-layer="pulse" type="button" aria-pressed="false" disabled>Solo</button>
+                  <button class="studio-button" data-preview-layer="pulse" type="button" disabled>Preview</button>
+                </div>
+              </article>
+
+              <article class="studio-layer" data-sound-layer="atmosphere">
+                <div class="studio-layer-head">
+                  <span class="studio-number">03</span>
+                  <div><h3>EARTH ATMOSPHERE</h3><p>Trailing variability → harmonic texture</p></div>
+                </div>
+                <label class="studio-field" for="atmosphere-instrument"><span>Instrument</span>
+                  <select id="atmosphere-instrument" data-instrument="atmosphere" disabled>
+                    <option value="ambient-pad">Ambient Synth Pad</option><option value="atmospheric-strings">Atmospheric Strings</option><option value="harmonic-drone">Harmonic Drone</option><option value="evolving-texture">Evolving Synth Texture</option><option value="cinematic-texture">Soft Cinematic Texture</option>
+                  </select>
+                </label>
+                <label class="studio-slider" for="atmosphere-level"><span>Layer level <output id="atmosphere-level-value">48%</output></span>
+                  <input id="atmosphere-level" data-layer-level="atmosphere" type="range" min="0" max="1" value="0.48" step="0.01" disabled>
+                </label>
+                <div class="studio-layer-actions">
+                  <label class="layer-toggle"><input id="atmosphere-enabled" data-layer-enabled="atmosphere" type="checkbox" checked disabled> Enabled</label>
+                  <button class="studio-button" data-solo-layer="atmosphere" type="button" aria-pressed="false" disabled>Solo</button>
+                  <button class="studio-button" data-preview-layer="atmosphere" type="button" disabled>Preview</button>
+                </div>
+              </article>
+            </div>
+
+            <div class="studio-bottom">
+              <label class="studio-slider master-slider" for="studio-master-volume"><span>Master output <output id="studio-master-value">55%</output></span>
+                <input id="studio-master-volume" type="range" min="0" max="1" value="0.55" step="0.01" disabled>
               </label>
-              <div class="studio-layer-actions">
-                <label class="layer-toggle"><input id="melody-enabled" data-layer-enabled="melody" type="checkbox" checked disabled> Enabled</label>
-                <button class="studio-button" data-solo-layer="melody" type="button" aria-pressed="false" disabled>Solo</button>
-                <button class="studio-button" data-preview-layer="melody" type="button" disabled>Preview</button>
+              <fieldset class="effects-controls">
+                <legend>Optional effects</legend>
+                <label class="effect-toggle"><input id="reverb-enabled" type="checkbox" disabled> Reverb</label>
+                <label class="studio-slider effect-slider" for="reverb-level"><span>Amount <output id="reverb-level-value">18%</output></span>
+                  <input id="reverb-level" type="range" min="0" max="0.35" value="0.18" step="0.01" disabled>
+                </label>
+                <label class="effect-toggle"><input id="delay-enabled" type="checkbox" disabled> Delay</label>
+                <label class="studio-slider effect-slider" for="delay-level"><span>Amount <output id="delay-level-value">8%</output></span>
+                  <input id="delay-level" type="range" min="0" max="0.25" value="0.08" step="0.01" disabled>
+                </label>
+              </fieldset>
+            </div>
+            <p class="studio-note">Preview auditions a sound-design tone outside the data timeline. Live layer controls and effects transition smoothly; the measured waveform, spectrum, and spectrogram continue to show actual output.</p>
+          </section>
+
+          <section class="viz-grid" aria-label="Scientific analysis panels">
+            <article class="viz-panel audio-panel" aria-labelledby="audio-viz-heading">
+              <div class="viz-panel-head compact-head">
+                <div>
+                  <p class="panel-eyebrow">LIVE WEB AUDIO ANALYSER</p>
+                  <h2 id="audio-viz-heading">Sound, as generated</h2>
+                  <p class="panel-subtitle">Measured from the active EARTH JUKEBOX audio output.</p>
+                </div>
+                <span class="signal-state" id="audio-signal-state">AUDIO IDLE</span>
               </div>
+              <p class="audio-clock" id="audio-clock" aria-live="polite">— · waiting for NASA data</p>
+              <div class="audio-canvas-grid">
+                <div class="audio-plot waveform-plot">
+                  <div class="plot-title"><span>WAVEFORM</span><span>AMPLITUDE</span></div>
+                  <canvas id="waveform-canvas" role="img" aria-label="Live waveform measured from the generated audio output"></canvas>
+                  <div class="plot-axis"><span>−1</span><span>0</span><span>+1</span></div>
+                </div>
+                <div class="audio-plot frequency-plot">
+                  <div class="plot-title"><span>LIVE FREQUENCY SPECTRUM</span><span>Hz · AUDIO</span></div>
+                  <canvas id="audio-spectrum-canvas" role="img" aria-label="Live audio frequency spectrum measured from the generated audio output"></canvas>
+                  <div class="plot-axis"><span>0 Hz</span><span>1 kHz</span><span>2 kHz</span><span>4 kHz</span></div>
+                </div>
+                <div class="audio-plot spectrogram-plot">
+                  <div class="plot-title"><span>LIVE SPECTROGRAM</span><span>FREQUENCY → · TIME ↓</span></div>
+                  <canvas id="spectrogram-canvas" role="img" aria-label="Rolling spectrogram of generated audio; color indicates measured signal intensity"></canvas>
+                  <div class="plot-axis"><span>0 Hz</span><span>1 kHz</span><span>2 kHz</span><span>4 kHz</span><span>RECENT ↓ OLDER</span></div>
+                </div>
+              </div>
+              <p class="viz-note">Waveform, spectrum, and spectrogram use samples from the Web Audio analyser connected to the audible output. They are not climate frequency measurements.</p>
             </article>
 
-            <article class="studio-layer" data-sound-layer="pulse">
-              <div class="studio-layer-head">
-                <span class="studio-number">02</span>
-                <div><h3>EARTH PULSE</h3><p>Monthly change → rhythm &amp; intensity</p></div>
+            <article class="viz-panel climate-spectrum-panel" aria-labelledby="climate-spectrum-heading">
+              <div class="viz-panel-head compact-head">
+                <div>
+                  <p class="panel-eyebrow">CLIMATE VARIABILITY · DERIVED</p>
+                  <h2 id="climate-spectrum-heading">Temperature power spectrum</h2>
+                  <p class="panel-subtitle">Monthly anomaly variability · cycles per year (not audio Hz)</p>
+                </div>
+                <button class="icon-button fullscreen-button" type="button" data-fullscreen="climate-spectrum-panel" aria-label="Toggle temperature power spectrum full screen">⛶</button>
               </div>
-              <label class="studio-field" for="pulse-instrument"><span>Instrument</span>
-                <select id="pulse-instrument" data-instrument="pulse" disabled>
-                  <option value="soft-percussion">Soft Percussion</option><option value="electronic-percussion">Electronic Percussion</option><option value="wooden-ticks">Wooden Ticks</option><option value="heartbeat">Soft Heartbeat-style Pulse</option><option value="minimal-beat">Minimal Electronic Beat</option>
-                </select>
-              </label>
-              <label class="studio-slider" for="pulse-level"><span>Layer level <output id="pulse-level-value">60%</output></span>
-                <input id="pulse-level" data-layer-level="pulse" type="range" min="0" max="1" value="0.6" step="0.01" disabled>
-              </label>
-              <div class="studio-layer-actions">
-                <label class="layer-toggle"><input id="pulse-enabled" data-layer-enabled="pulse" type="checkbox" checked disabled> Enabled</label>
-                <button class="studio-button" data-solo-layer="pulse" type="button" aria-pressed="false" disabled>Solo</button>
-                <button class="studio-button" data-preview-layer="pulse" type="button" disabled>Preview</button>
-              </div>
+              <canvas id="climate-spectrum-canvas" class="science-chart" role="img" aria-label="Welch power spectrum of the monthly global temperature anomaly series"></canvas>
+              <p class="analysis-metadata" id="spectrum-window-info" aria-live="polite">Calculating spectrum from contiguous monthly observations…</p>
+              <p class="viz-note">Welch periodogram of contiguous monthly segments: up to 256-month Hann windows (window length is reduced for shorter selections), 50% overlap, per-window linear detrending; power averaged across windows. Units: °C² / (cycle/year). Climate variability is not recorded sound.</p>
             </article>
 
-            <article class="studio-layer" data-sound-layer="atmosphere">
-              <div class="studio-layer-head">
-                <span class="studio-number">03</span>
-                <div><h3>EARTH ATMOSPHERE</h3><p>Trailing variability → harmonic texture</p></div>
+            <article class="viz-panel annual-panel" aria-labelledby="annual-heading">
+              <div class="viz-panel-head compact-head">
+                <div>
+                  <p class="panel-eyebrow">CALCULATED INDICATORS · NOT RAW ANNUAL OBSERVATIONS</p>
+                  <h2 id="annual-heading">Annual means &amp; seasonal pattern</h2>
+                  <p class="panel-subtitle">Annual mean from available months · calendar-month mean from observed values.</p>
+                </div>
+                <button class="icon-button fullscreen-button" type="button" data-fullscreen="annual-panel" aria-label="Toggle annual and seasonal chart full screen">⛶</button>
               </div>
-              <label class="studio-field" for="atmosphere-instrument"><span>Instrument</span>
-                <select id="atmosphere-instrument" data-instrument="atmosphere" disabled>
-                  <option value="ambient-pad">Ambient Synth Pad</option><option value="atmospheric-strings">Atmospheric Strings</option><option value="harmonic-drone">Harmonic Drone</option><option value="evolving-texture">Evolving Synth Texture</option><option value="cinematic-texture">Soft Cinematic Texture</option>
-                </select>
-              </label>
-              <label class="studio-slider" for="atmosphere-level"><span>Layer level <output id="atmosphere-level-value">48%</output></span>
-                <input id="atmosphere-level" data-layer-level="atmosphere" type="range" min="0" max="1" value="0.48" step="0.01" disabled>
-              </label>
-              <div class="studio-layer-actions">
-                <label class="layer-toggle"><input id="atmosphere-enabled" data-layer-enabled="atmosphere" type="checkbox" checked disabled> Enabled</label>
-                <button class="studio-button" data-solo-layer="atmosphere" type="button" aria-pressed="false" disabled>Solo</button>
-                <button class="studio-button" data-preview-layer="atmosphere" type="button" disabled>Preview</button>
+              <canvas id="annual-canvas" class="science-chart" role="img" aria-label="Calculated annual mean anomalies and linear trend"></canvas>
+              <div class="seasonal-row">
+                <div>
+                  <span class="axis-label">CALENDAR-MONTH MEAN · DERIVED (°C)</span>
+                  <canvas id="seasonal-canvas" role="img" aria-label="Derived mean anomaly by calendar month"></canvas>
+                </div>
+                <div class="trend-readout">
+                  <span class="axis-label">OLS SLOPE · COMPLETE YEARS</span>
+                  <strong id="trend-value">—</strong>
+                  <span>°C / decade across full calendar years</span>
+                  <small id="trend-note">Partial years are shown, but excluded from the fit.</small>
+                </div>
               </div>
+              <p class="viz-note">Annual averages use the months available in each NASA calendar year. The ordinary least-squares slope uses complete calendar years only. The seasonal comparison is a derived calendar-month mean over the selected year window.</p>
             </article>
-          </div>
 
-          <div class="studio-bottom">
-            <label class="studio-slider master-slider" for="studio-master-volume"><span>Master output <output id="studio-master-value">55%</output></span>
-              <input id="studio-master-volume" type="range" min="0" max="1" value="0.55" step="0.01" disabled>
-            </label>
-            <fieldset class="effects-controls">
-              <legend>Optional effects</legend>
-              <label class="effect-toggle"><input id="reverb-enabled" type="checkbox" disabled> Reverb</label>
-              <label class="studio-slider effect-slider" for="reverb-level"><span>Amount <output id="reverb-level-value">18%</output></span>
-                <input id="reverb-level" type="range" min="0" max="0.35" value="0.18" step="0.01" disabled>
-              </label>
-              <label class="effect-toggle"><input id="delay-enabled" type="checkbox" disabled> Delay</label>
-              <label class="studio-slider effect-slider" for="delay-level"><span>Amount <output id="delay-level-value">8%</output></span>
-                <input id="delay-level" type="range" min="0" max="0.25" value="0.08" step="0.01" disabled>
-              </label>
-            </fieldset>
-          </div>
-          <p class="studio-note">Preview auditions a sound-design tone outside the data timeline. Live layer controls and effects transition smoothly; the measured waveform, spectrum, and spectrogram continue to show actual output.</p>
-        </section>
-
-        <section class="viz-grid" aria-label="Scientific analysis panels">
-          <article class="viz-panel audio-panel" aria-labelledby="audio-viz-heading">
-            <div class="viz-panel-head compact-head">
-              <div>
-                <p class="panel-eyebrow">LIVE WEB AUDIO ANALYSER</p>
-                <h2 id="audio-viz-heading">Sound, as generated</h2>
-                <p class="panel-subtitle">Measured from the active EARTH JUKEBOX audio output.</p>
+            <article class="viz-panel layers-panel" aria-labelledby="layers-heading">
+              <div class="viz-panel-head compact-head">
+                <div>
+                  <p class="panel-eyebrow">SONIFICATION ENGINE · CURRENT PARAMETERS</p>
+                  <h2 id="layers-heading">Audio layers</h2>
+                  <p class="panel-subtitle">Values below drive the sound for the selected observation.</p>
+                </div>
+                <button class="icon-button fullscreen-button" type="button" data-fullscreen="layers-panel" aria-label="Toggle audio layers full screen">⛶</button>
               </div>
-              <span class="signal-state" id="audio-signal-state">AUDIO IDLE</span>
-            </div>
-            <p class="audio-clock" id="audio-clock" aria-live="polite">— · waiting for NASA data</p>
-            <div class="audio-canvas-grid">
-              <div class="audio-plot waveform-plot">
-                <div class="plot-title"><span>WAVEFORM</span><span>AMPLITUDE</span></div>
-                <canvas id="waveform-canvas" role="img" aria-label="Live waveform measured from the generated audio output"></canvas>
-                <div class="plot-axis"><span>−1</span><span>0</span><span>+1</span></div>
+              <div class="layer-readouts" aria-live="polite">
+                <div class="engine-layer">
+                  <span class="engine-index">01</span><div class="engine-main"><strong>EARTH MELODY</strong><span id="melody-instrument-name">Piano · anomaly to pitch</span></div>
+                  <output id="melody-value">—</output><div class="meter"><i id="melody-meter"></i></div>
+                </div>
+                <div class="engine-layer">
+                  <span class="engine-index">02</span><div class="engine-main"><strong>EARTH PULSE</strong><span id="pulse-instrument-name">Wooden Ticks · monthly change to rhythm</span></div>
+                  <output id="pulse-value">—</output><div class="meter"><i id="pulse-meter"></i></div>
+                </div>
+                <div class="engine-layer">
+                  <span class="engine-index">03</span><div class="engine-main"><strong>EARTH ATMOSPHERE</strong><span id="atmosphere-instrument-name">Harmonic Drone · variability to texture</span></div>
+                  <output id="atmosphere-value">—</output><div class="meter"><i id="atmosphere-meter"></i></div>
+                </div>
+                <div class="engine-layer engine-layer-disabled">
+                  <span class="engine-index">—</span><div class="engine-main"><strong>EARTH DRIFT</strong><span>Spatial motion is not implemented</span></div>
+                  <output>INACTIVE</output><div class="meter"><i></i></div>
+                </div>
               </div>
-              <div class="audio-plot frequency-plot">
-                <div class="plot-title"><span>LIVE FREQUENCY SPECTRUM</span><span>Hz · AUDIO</span></div>
-                <canvas id="audio-spectrum-canvas" role="img" aria-label="Live audio frequency spectrum measured from the generated audio output"></canvas>
-                <div class="plot-axis"><span>0 Hz</span><span>1 kHz</span><span>2 kHz</span><span>4 kHz</span></div>
-              </div>
-              <div class="audio-plot spectrogram-plot">
-                <div class="plot-title"><span>LIVE SPECTROGRAM</span><span>FREQUENCY → · TIME ↓</span></div>
-                <canvas id="spectrogram-canvas" role="img" aria-label="Rolling spectrogram of generated audio; color indicates measured signal intensity"></canvas>
-                <div class="plot-axis"><span>0 Hz</span><span>1 kHz</span><span>2 kHz</span><span>4 kHz</span><span>RECENT ↓ OLDER</span></div>
-              </div>
-            </div>
-            <p class="viz-note">Waveform, spectrum, and spectrogram use samples from the Web Audio analyser connected to the audible output. They are not climate frequency measurements.</p>
-          </article>
-
-          <article class="viz-panel climate-spectrum-panel" aria-labelledby="climate-spectrum-heading">
-            <div class="viz-panel-head compact-head">
-              <div>
-                <p class="panel-eyebrow">CLIMATE VARIABILITY · DERIVED</p>
-                <h2 id="climate-spectrum-heading">Temperature power spectrum</h2>
-                <p class="panel-subtitle">Monthly anomaly variability · cycles per year (not audio Hz)</p>
-              </div>
-              <button class="icon-button fullscreen-button" type="button" data-fullscreen="climate-spectrum-panel" aria-label="Toggle temperature power spectrum full screen">⛶</button>
-            </div>
-            <canvas id="climate-spectrum-canvas" class="science-chart" role="img" aria-label="Welch power spectrum of the monthly global temperature anomaly series"></canvas>
-            <p class="analysis-metadata" id="spectrum-window-info" aria-live="polite">Calculating spectrum from contiguous monthly observations…</p>
-            <p class="viz-note">Welch periodogram of contiguous monthly segments: up to 256-month Hann windows (window length is reduced for shorter selections), 50% overlap, per-window linear detrending; power averaged across windows. Units: °C² / (cycle/year). Climate variability is not recorded sound.</p>
-          </article>
-
-          <article class="viz-panel annual-panel" aria-labelledby="annual-heading">
-            <div class="viz-panel-head compact-head">
-              <div>
-                <p class="panel-eyebrow">CALCULATED INDICATORS · NOT RAW ANNUAL OBSERVATIONS</p>
-                <h2 id="annual-heading">Annual means &amp; seasonal pattern</h2>
-                <p class="panel-subtitle">Annual mean from available months · calendar-month mean from observed values.</p>
-              </div>
-              <button class="icon-button fullscreen-button" type="button" data-fullscreen="annual-panel" aria-label="Toggle annual and seasonal chart full screen">⛶</button>
-            </div>
-            <canvas id="annual-canvas" class="science-chart" role="img" aria-label="Calculated annual mean anomalies and linear trend"></canvas>
-            <div class="seasonal-row">
-              <div>
-                <span class="axis-label">CALENDAR-MONTH MEAN · DERIVED (°C)</span>
-                <canvas id="seasonal-canvas" role="img" aria-label="Derived mean anomaly by calendar month"></canvas>
-              </div>
-              <div class="trend-readout">
-                <span class="axis-label">OLS SLOPE · COMPLETE YEARS</span>
-                <strong id="trend-value">—</strong>
-                <span>°C / decade across full calendar years</span>
-                <small id="trend-note">Partial years are shown, but excluded from the fit.</small>
-              </div>
-            </div>
-            <p class="viz-note">Annual averages use the months available in each NASA calendar year. The ordinary least-squares slope uses complete calendar years only. The seasonal comparison is a derived calendar-month mean over the selected year window.</p>
-          </article>
-
-          <article class="viz-panel layers-panel" aria-labelledby="layers-heading">
-            <div class="viz-panel-head compact-head">
-              <div>
-                <p class="panel-eyebrow">SONIFICATION ENGINE · CURRENT PARAMETERS</p>
-                <h2 id="layers-heading">Audio layers</h2>
-                <p class="panel-subtitle">Values below drive the sound for the selected observation.</p>
-              </div>
-              <button class="icon-button fullscreen-button" type="button" data-fullscreen="layers-panel" aria-label="Toggle audio layers full screen">⛶</button>
-            </div>
-            <div class="layer-readouts" aria-live="polite">
-              <div class="engine-layer">
-                <span class="engine-index">01</span><div class="engine-main"><strong>EARTH MELODY</strong><span id="melody-instrument-name">Piano · anomaly to pitch</span></div>
-                <output id="melody-value">—</output><div class="meter"><i id="melody-meter"></i></div>
-              </div>
-              <div class="engine-layer">
-                <span class="engine-index">02</span><div class="engine-main"><strong>EARTH PULSE</strong><span id="pulse-instrument-name">Wooden Ticks · monthly change to rhythm</span></div>
-                <output id="pulse-value">—</output><div class="meter"><i id="pulse-meter"></i></div>
-              </div>
-              <div class="engine-layer">
-                <span class="engine-index">03</span><div class="engine-main"><strong>EARTH ATMOSPHERE</strong><span id="atmosphere-instrument-name">Harmonic Drone · variability to texture</span></div>
-                <output id="atmosphere-value">—</output><div class="meter"><i id="atmosphere-meter"></i></div>
-              </div>
-              <div class="engine-layer engine-layer-disabled">
-                <span class="engine-index">—</span><div class="engine-main"><strong>EARTH DRIFT</strong><span>Spatial motion is not implemented</span></div>
-                <output>INACTIVE</output><div class="meter"><i></i></div>
-              </div>
-            </div>
-            <p class="viz-note">Readouts use the same NASA-derived inputs as the audio: anomaly for pitch, consecutive monthly change for pulse, and trailing contiguous variability for atmosphere. Palette and instrument changes affect timbre only. Earth Drift is not implemented.</p>
-          </article>
-        </section>
-
-        <section class="sound-guide" aria-labelledby="sound-heading">
-          <div class="section-heading">
-            <p class="eyebrow"><span class="eyebrow-line"></span> How to listen</p>
-            <h2 id="sound-heading">Three layers. One measurement.</h2>
-          </div>
-          <div class="sound-layers">
-            <article class="sound-layer">
-              <span class="layer-number">01</span>
-              <div>
-                <h3>Pitch</h3>
-                <p>A higher anomaly in the observed series maps to a higher note.</p>
-              </div>
-              <span class="layer-mark pitch-mark" aria-hidden="true"></span>
+              <p class="viz-note">Readouts use the same NASA-derived inputs as the audio: anomaly for pitch, consecutive monthly change for pulse, and trailing contiguous variability for atmosphere. Palette and instrument changes affect timbre only. Earth Drift is not implemented.</p>
             </article>
-            <article class="sound-layer">
-              <span class="layer-number">02</span>
-              <div>
-                <h3>Pulse</h3>
-                <p>Changes between consecutive observed months control pulse rate and intensity. Missing months are never bridged.</p>
-              </div>
-              <span class="layer-mark pulse-mark" aria-hidden="true"></span>
-            </article>
-            <article class="sound-layer">
-              <span class="layer-number">03</span>
-              <div>
-                <h3>Timbre</h3>
-                <p>The standard deviation of up to 12 contiguous monthly anomalies controls harmonic richness and filter brightness.</p>
-              </div>
-              <span class="layer-mark timbre-mark" aria-hidden="true"></span>
-            </article>
-          </div>
-          <p class="mapping-note">
-            These are artistic mappings across the observed dataset range. The measurement remains
-            a temperature anomaly in °C; sound is not a second measurement.
-          </p>
-        </section>
+          </section>
 
-        <details class="science-details">
-          <summary>
-            <span>
-              <span class="details-title">About the science</span>
-              <span class="details-subtitle">Source, units, and how the sound is made</span>
-            </span>
-            <span class="details-toggle" aria-hidden="true">+</span>
-          </summary>
-          <div class="details-content">
-            <div>
-              <h3>The measurement</h3>
-              <p>
-                NASA GISTEMP v4 reports global mean land–ocean temperature anomalies relative to
-                the 1951–1980 average. An anomaly is a difference from that reference, not an
-                absolute temperature. This global dataset does not provide geographic positions.
-              </p>
-              <p>
-                The local record contains <strong id="observation-count">—</strong> valid monthly
-                observations. Missing NASA observations are omitted, never filled with zero or
-                interpolated.
-              </p>
-              <a
-                class="source-link"
-                href="https://data.giss.nasa.gov/gistemp/"
-                target="_blank"
-                rel="noreferrer"
-              >NASA GISTEMP source and documentation <span aria-hidden="true">↗</span></a>
+          <section class="sound-guide" aria-labelledby="sound-heading">
+            <div class="section-heading">
+              <p class="eyebrow"><span class="eyebrow-line"></span> How to listen</p>
+              <h2 id="sound-heading">Three layers. One measurement.</h2>
             </div>
-            <div>
-              <h3>The sound mapping</h3>
-              <p>
-                Melody pitch is mapped exponentially from the dataset's minimum-to-maximum anomaly
-                range. Pulse rate and intensity are based on the absolute change from the previous
-                consecutive observed month. Atmosphere timbre follows the standard deviation of up
-                to 12 contiguous observations ending at the selected month. A gap is never bridged;
-                a layer with insufficient prior observations stays silent.
-              </p>
-              <p>
-                The sound palette and instruments change only synthesis, not the measurement-to-sound
-                mapping. Layers can be enabled, mixed, soloed, muted, previewed, and processed with
-                optional reverb or delay. A preview is an isolated sound-design audition, not a NASA
-                observation or a timeline event. Master dynamics compression limits peaks.
-              </p>
-              <p>
-                The climate power spectrum uses Welch's averaged periodogram on contiguous monthly
-                anomalies with Hann windows up to 256 months, 50% overlap, and per-window linear
-                detrending. Its units are cycles per year and °C² per (cycle/year), not acoustic
-                frequency.
-              </p>
-              <p>
-                The NASA Climate Spiral video is not used as a synchronized timeline. No
-                frame-to-month relationship is assumed.
-              </p>
+            <div class="sound-layers">
+              <article class="sound-layer">
+                <span class="layer-number">01</span>
+                <div>
+                  <h3>Pitch</h3>
+                  <p>A higher anomaly in the observed series maps to a higher note.</p>
+                </div>
+                <span class="layer-mark pitch-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">02</span>
+                <div>
+                  <h3>Pulse</h3>
+                  <p>Changes between consecutive observed months control pulse rate and intensity. Missing months are never bridged.</p>
+                </div>
+                <span class="layer-mark pulse-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">03</span>
+                <div>
+                  <h3>Timbre</h3>
+                  <p>The standard deviation of up to 12 contiguous monthly anomalies controls harmonic richness and filter brightness.</p>
+                </div>
+                <span class="layer-mark timbre-mark" aria-hidden="true"></span>
+              </article>
             </div>
-          </div>
-        </details>
+            <p class="mapping-note">
+              These are artistic mappings across the observed dataset range. The measurement remains
+              a temperature anomaly in °C; sound is not a second measurement.
+            </p>
+          </section>
 
-        <section class="demo-flow" aria-labelledby="demo-heading">
-          <p class="eyebrow"><span class="eyebrow-line"></span> Your first 30 seconds</p>
-          <h2 id="demo-heading">A quick listening guide</h2>
-          <ol>
-            <li><span>00–10s</span><p>Start at the beginning and read the selected anomaly and reference period.</p></li>
-            <li><span>10–20s</span><p>Press <strong>Play Earth</strong>. Each note and chart position represents the same month.</p></li>
-            <li><span>20–30s</span><p>Try a different palette, then hear higher notes follow anomalies and pulse activity follow month-to-month change.</p></li>
-          </ol>
-        </section>
+          <details class="science-details">
+            <summary>
+              <span>
+                <span class="details-title">About the science</span>
+                <span class="details-subtitle">Source, units, and how the sound is made</span>
+              </span>
+              <span class="details-toggle" aria-hidden="true">+</span>
+            </summary>
+            <div class="details-content">
+              <div>
+                <h3>The measurement</h3>
+                <p>
+                  NASA GISTEMP v4 reports global mean land–ocean temperature anomalies relative to
+                  the 1951–1980 average. An anomaly is a difference from that reference, not an
+                  absolute temperature. This global dataset does not provide geographic positions.
+                </p>
+                <p>
+                  The local record contains <strong id="observation-count">—</strong> valid monthly
+                  observations. Missing NASA observations are omitted, never filled with zero or
+                  interpolated.
+                </p>
+                <a
+                  class="source-link"
+                  href="https://data.giss.nasa.gov/gistemp/"
+                  target="_blank"
+                  rel="noreferrer"
+                >NASA GISTEMP source and documentation <span aria-hidden="true">↗</span></a>
+              </div>
+              <div>
+                <h3>The sound mapping</h3>
+                <p>
+                  Melody pitch is mapped exponentially from the dataset's minimum-to-maximum anomaly
+                  range. Pulse rate and intensity are based on the absolute change from the previous
+                  consecutive observed month. Atmosphere timbre follows the standard deviation of up
+                  to 12 contiguous observations ending at the selected month. A gap is never bridged;
+                  a layer with insufficient prior observations stays silent.
+                </p>
+                <p>
+                  The sound palette and instruments change only synthesis, not the measurement-to-sound
+                  mapping. Layers can be enabled, mixed, soloed, muted, previewed, and processed with
+                  optional reverb or delay. A preview is an isolated sound-design audition, not a NASA
+                  observation or a timeline event. Master dynamics compression limits peaks.
+                </p>
+                <p>
+                  The climate power spectrum uses Welch's averaged periodogram on contiguous monthly
+                  anomalies with Hann windows up to 256 months, 50% overlap, and per-window linear
+                  detrending. Its units are cycles per year and °C² per (cycle/year), not acoustic
+                  frequency.
+                </p>
+                <p>
+                  The NASA Climate Spiral video is not used as a synchronized timeline. No
+                  frame-to-month relationship is assumed.
+                </p>
+              </div>
+            </div>
+          </details>
+
+          <section class="demo-flow" aria-labelledby="demo-heading">
+            <p class="eyebrow"><span class="eyebrow-line"></span> Your first 30 seconds</p>
+            <h2 id="demo-heading">A quick listening guide</h2>
+            <ol>
+              <li><span>00–10s</span><p>Start at the beginning and read the selected anomaly and reference period.</p></li>
+              <li><span>10–20s</span><p>Press <strong>Play Earth</strong>. Each note and chart position represents the same month.</p></li>
+              <li><span>20–30s</span><p>Try a different palette, then hear higher notes follow anomalies and pulse activity follow month-to-month change.</p></li>
+            </ol>
+          </section>
+
+        </div><!-- /workspace-temperature -->
+
+        <!-- ══════════════════════════════════════════════════════════
+             WORKSPACE: OCEAN CURRENTS
+        ══════════════════════════════════════════════════════════ -->
+        <div id="workspace-ocean" class="phenomenon-workspace" role="tabpanel" aria-labelledby="tab-ocean" hidden>
+          <section class="phenom-intro" aria-labelledby="ocean-title">
+            <p class="eyebrow"><span class="eyebrow-line"></span> GLOBAL OCEAN SURFACE DYNAMICS</p>
+            <h1 id="ocean-title">Ocean Currents<br><span>The planet's heat conveyor belt</span></h1>
+            <p class="intro-copy">Explore the velocity and patterns of ocean surface currents — the planet's vast conveyor belt of heat, nutrients, and carbon. Each observation represents a measured or estimated composite of ocean surface current speed.</p>
+            <div class="phenom-source-row">
+              <span class="phenom-source-badge">SOURCE</span>
+              <span class="phenom-source-text">OSCAR/NOAA · Global Ocean Surface Currents · Satellite Era</span>
+            </div>
+            <p class="integrity-note">
+              <span class="note-icon" aria-hidden="true">i</span>
+              This is a sonification of measurements, not a recording of the phenomenon.
+            </p>
+          </section>
+
+          <section class="phenom-viz-panel viz-panel" id="ocean-viz-panel" aria-labelledby="ocean-viz-heading">
+            <div class="viz-panel-head">
+              <div>
+                <p class="panel-eyebrow"><span class="live-indicator" aria-hidden="true"></span> OSCAR/NOAA · GLOBAL OCEAN SURFACE CURRENT DATA</p>
+                <h2 id="ocean-viz-heading">Ocean surface current speed</h2>
+                <p class="panel-subtitle">Annual mean current speed index · satellite altimetry era 1993–present</p>
+              </div>
+              <div class="surface-actions">
+                <span class="phenom-data-status" id="phenom-status-ocean">Loading data…</span>
+                <button id="ocean-viz-reset" class="icon-button" type="button">Reset view</button>
+                <button id="ocean-viz-fullscreen" class="icon-button" type="button" aria-label="Toggle fullscreen" data-fullscreen="ocean-viz-panel">⛶</button>
+              </div>
+            </div>
+            <div class="phenom-viz-body">
+              <div class="phenom-canvas-wrap">
+                <canvas id="ocean-canvas" class="phenomenon-canvas" role="img" aria-label="Interactive visualization of global ocean surface current speed over time"></canvas>
+                <div id="ocean-tooltip" class="surface-tooltip" role="status" hidden></div>
+              </div>
+            </div>
+            <div class="phenom-viz-footer">
+              <div class="surface-readout">
+                <span>SELECTED OBSERVATION</span>
+                <strong id="ocean-readout">—</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="player" aria-label="Ocean Currents record player">
+            <div class="player-topline">
+              <div class="dataset-label">
+                <span class="live-indicator" aria-hidden="true"></span>
+                <span>ANNUAL OCEAN CURRENT SPEED · TIMELINE</span>
+              </div>
+              <span class="dataset-range" id="ocean-range">Preparing record…</span>
+            </div>
+            <div class="player-grid">
+              <div class="visual-panel">
+                <div class="reading">
+                  <div>
+                    <p class="reading-label" id="ocean-date">Waiting for data</p>
+                    <p class="reading-value" id="ocean-value">--<span> m/s</span></p>
+                  </div>
+                  <p class="reading-context">mean surface<br>current speed</p>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="ocean-chart" class="phenomenon-chart-canvas" role="img" aria-label="Timeline chart of annual ocean surface current speed index"></canvas>
+                  <div class="chart-axis" id="ocean-axis" aria-hidden="true"></div>
+                </div>
+                <input id="ocean-timeline" class="timeline-input" type="range" min="0" max="0" value="0" step="1" aria-label="Seek through Ocean Currents record" disabled>
+                <div class="timeline-hint">
+                  <span id="ocean-timeline-start">—</span>
+                  <span id="ocean-timeline-hint">32 observations</span>
+                  <span id="ocean-timeline-end">—</span>
+                </div>
+              </div>
+              <div class="control-panel">
+                <p class="control-kicker">LISTEN TO THE DATA</p>
+                <p class="control-explainer">Each sound represents one year of measurement.</p>
+                <button id="ocean-play" class="play-button" type="button" disabled>
+                  <span class="play-icon" aria-hidden="true">▶</span>
+                  <span id="ocean-play-label">Play Ocean Currents</span>
+                </button>
+                <div class="transport-controls">
+                  <button id="ocean-stop" class="secondary-button" type="button" disabled>
+                    <span aria-hidden="true">■</span> Stop
+                  </button>
+                  <label class="speed-control">
+                    <span>Speed</span>
+                    <select id="ocean-speed" aria-label="Playback speed" disabled>
+                      <option value="0.5">0.5×</option>
+                      <option value="1" selected>1×</option>
+                      <option value="2">2×</option>
+                      <option value="4">4×</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="volume-control" for="ocean-volume">
+                  <span>Master volume</span>
+                  <input id="ocean-volume" type="range" min="0" max="1" value="0.55" step="0.01" aria-label="Volume" disabled>
+                </label>
+                <p class="playback-status" id="ocean-playback-status" aria-live="polite">Loading data…</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="sound-guide" aria-labelledby="ocean-sound-heading">
+            <div class="section-heading">
+              <p class="eyebrow"><span class="eyebrow-line"></span> How to listen</p>
+              <h2 id="ocean-sound-heading">Three layers. One current.</h2>
+            </div>
+            <div class="sound-layers">
+              <article class="sound-layer">
+                <span class="layer-number">01</span>
+                <div><h3>OCEAN DRIFT</h3><p>Current velocity → pitch. Higher current speed maps to a higher, more urgent tone.</p></div>
+                <span class="layer-mark pitch-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">02</span>
+                <div><h3>TIDAL PULSE</h3><p>Velocity change → rhythm. Year-to-year speed variations drive the pulse rate and intensity.</p></div>
+                <span class="layer-mark pulse-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">03</span>
+                <div><h3>DEEP CURRENT</h3><p>Variability → texture. Inter-annual variability index shapes the harmonic richness of the drone.</p></div>
+                <span class="layer-mark timbre-mark" aria-hidden="true"></span>
+              </article>
+            </div>
+            <p class="mapping-note">These are artistic sonification mappings. The measurements remain in their scientific units; sound is not a second measurement.</p>
+          </section>
+        </div><!-- /workspace-ocean -->
+
+        <!-- ══════════════════════════════════════════════════════════
+             WORKSPACE: ATMOSPHERIC CO₂
+        ══════════════════════════════════════════════════════════ -->
+        <div id="workspace-co2" class="phenomenon-workspace" role="tabpanel" aria-labelledby="tab-co2" hidden>
+          <section class="phenom-intro" aria-labelledby="co2-title">
+            <p class="eyebrow"><span class="eyebrow-line"></span> MAUNA LOA OBSERVATORY · NOAA GML</p>
+            <h1 id="co2-title">Atmospheric CO₂<br><span>The Keeling Curve, heard</span></h1>
+            <p class="intro-copy">Listen to the Keeling Curve — the unbroken record of atmospheric carbon dioxide concentration measured at Mauna Loa Observatory since 1958. Each note represents a real monthly measurement of CO₂ in parts per million.</p>
+            <div class="phenom-source-row">
+              <span class="phenom-source-badge">SOURCE</span>
+              <span class="phenom-source-text">NOAA Global Monitoring Laboratory · Mauna Loa · 1958–present</span>
+            </div>
+            <p class="integrity-note">
+              <span class="note-icon" aria-hidden="true">i</span>
+              This is a sonification of measurements, not a recording of the phenomenon.
+            </p>
+          </section>
+
+          <section class="phenom-viz-panel viz-panel" id="co2-viz-panel" aria-labelledby="co2-viz-heading">
+            <div class="viz-panel-head">
+              <div>
+                <p class="panel-eyebrow"><span class="live-indicator" aria-hidden="true"></span> NOAA GML · MAUNA LOA MONTHLY CO₂ DATA</p>
+                <h2 id="co2-viz-heading">Atmospheric CO₂ concentration</h2>
+                <p class="panel-subtitle">Monthly CO₂ in parts per million · Mauna Loa Observatory · 1958–present</p>
+              </div>
+              <div class="surface-actions">
+                <span class="phenom-data-status" id="phenom-status-co2">Loading data…</span>
+                <button id="co2-viz-reset" class="icon-button" type="button">Reset view</button>
+                <button id="co2-viz-fullscreen" class="icon-button" type="button" aria-label="Toggle fullscreen" data-fullscreen="co2-viz-panel">⛶</button>
+              </div>
+            </div>
+            <div class="phenom-viz-body">
+              <div class="phenom-canvas-wrap">
+                <canvas id="co2-canvas" class="phenomenon-canvas" role="img" aria-label="Interactive visualization of monthly atmospheric CO₂ concentration at Mauna Loa"></canvas>
+                <div id="co2-tooltip" class="surface-tooltip" role="status" hidden></div>
+              </div>
+            </div>
+            <div class="phenom-viz-footer">
+              <div class="surface-readout">
+                <span>SELECTED OBSERVATION</span>
+                <strong id="co2-readout">—</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="player" aria-label="Atmospheric CO₂ record player">
+            <div class="player-topline">
+              <div class="dataset-label">
+                <span class="live-indicator" aria-hidden="true"></span>
+                <span>MONTHLY CO₂ CONCENTRATION · TIMELINE</span>
+              </div>
+              <span class="dataset-range" id="co2-range">Preparing record…</span>
+            </div>
+            <div class="player-grid">
+              <div class="visual-panel">
+                <div class="reading">
+                  <div>
+                    <p class="reading-label" id="co2-date">Waiting for data</p>
+                    <p class="reading-value" id="co2-value">--<span> ppm</span></p>
+                  </div>
+                  <p class="reading-context">CO₂<br>concentration</p>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="co2-chart" class="phenomenon-chart-canvas" role="img" aria-label="Timeline chart of monthly atmospheric CO₂ concentration"></canvas>
+                  <div class="chart-axis" id="co2-axis" aria-hidden="true"></div>
+                </div>
+                <input id="co2-timeline" class="timeline-input" type="range" min="0" max="0" value="0" step="1" aria-label="Seek through Atmospheric CO₂ record" disabled>
+                <div class="timeline-hint">
+                  <span id="co2-timeline-start">—</span>
+                  <span id="co2-timeline-hint">— observations</span>
+                  <span id="co2-timeline-end">—</span>
+                </div>
+              </div>
+              <div class="control-panel">
+                <p class="control-kicker">LISTEN TO THE DATA</p>
+                <p class="control-explainer">Each sound represents one month of measurement.</p>
+                <button id="co2-play" class="play-button" type="button" disabled>
+                  <span class="play-icon" aria-hidden="true">▶</span>
+                  <span id="co2-play-label">Play Atmospheric CO₂</span>
+                </button>
+                <div class="transport-controls">
+                  <button id="co2-stop" class="secondary-button" type="button" disabled>
+                    <span aria-hidden="true">■</span> Stop
+                  </button>
+                  <label class="speed-control">
+                    <span>Speed</span>
+                    <select id="co2-speed" aria-label="Playback speed" disabled>
+                      <option value="0.5">0.5×</option>
+                      <option value="1" selected>1×</option>
+                      <option value="2">2×</option>
+                      <option value="4">4×</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="volume-control" for="co2-volume">
+                  <span>Master volume</span>
+                  <input id="co2-volume" type="range" min="0" max="1" value="0.55" step="0.01" aria-label="Volume" disabled>
+                </label>
+                <p class="playback-status" id="co2-playback-status" aria-live="polite">Loading data…</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="sound-guide" aria-labelledby="co2-sound-heading">
+            <div class="section-heading">
+              <p class="eyebrow"><span class="eyebrow-line"></span> How to listen</p>
+              <h2 id="co2-sound-heading">Three layers. One atmosphere.</h2>
+            </div>
+            <div class="sound-layers">
+              <article class="sound-layer">
+                <span class="layer-number">01</span>
+                <div><h3>CO₂ SIGNAL</h3><p>Concentration → pitch. Higher CO₂ ppm maps to a higher, more resonant tone — hear the relentless climb.</p></div>
+                <span class="layer-mark pitch-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">02</span>
+                <div><h3>CARBON PULSE</h3><p>Monthly change → rhythm. Month-to-month CO₂ change drives the pulse rate and intensity of the beat layer.</p></div>
+                <span class="layer-mark pulse-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">03</span>
+                <div><h3>SEASONAL BREATH</h3><p>Variability → texture. The seasonal cycle of CO₂ — forests breathing — shapes the harmonic texture of the drone.</p></div>
+                <span class="layer-mark timbre-mark" aria-hidden="true"></span>
+              </article>
+            </div>
+            <p class="mapping-note">These are artistic sonification mappings. The measurements remain in their scientific units; sound is not a second measurement.</p>
+          </section>
+        </div><!-- /workspace-co2 -->
+
+        <!-- ══════════════════════════════════════════════════════════
+             WORKSPACE: SEA-LEVEL CHANGE
+        ══════════════════════════════════════════════════════════ -->
+        <div id="workspace-sealevel" class="phenomenon-workspace" role="tabpanel" aria-labelledby="tab-sealevel" hidden>
+          <section class="phenom-intro" aria-labelledby="sealevel-title">
+            <p class="eyebrow"><span class="eyebrow-line"></span> NASA/CNES SATELLITE ALTIMETRY</p>
+            <h1 id="sealevel-title">Sea-Level Change<br><span>Rising waters, measured from orbit</span></h1>
+            <p class="intro-copy">Explore the rise of global mean sea level as measured by satellite altimeters since 1993. Each observation represents the sea-level anomaly relative to the 1993–2008 baseline — not an absolute sea-level measurement.</p>
+            <div class="phenom-source-row">
+              <span class="phenom-source-badge">SOURCE</span>
+              <span class="phenom-source-text">TOPEX/Poseidon, Jason-1/2/3 · NASA/CNES · 1993–present</span>
+            </div>
+            <p class="integrity-note">
+              <span class="note-icon" aria-hidden="true">i</span>
+              This is a sonification of measurements, not a recording of the phenomenon.
+            </p>
+          </section>
+
+          <section class="phenom-viz-panel viz-panel" id="sealevel-viz-panel" aria-labelledby="sealevel-viz-heading">
+            <div class="viz-panel-head">
+              <div>
+                <p class="panel-eyebrow"><span class="live-indicator" aria-hidden="true"></span> NASA/CNES · SATELLITE ALTIMETRY SEA LEVEL DATA</p>
+                <h2 id="sealevel-viz-heading">Global mean sea-level anomaly</h2>
+                <p class="panel-subtitle">Annual GMSL anomaly (mm) relative to 1993–2008 baseline · 1993–present</p>
+              </div>
+              <div class="surface-actions">
+                <span class="phenom-data-status" id="phenom-status-sealevel">Loading data…</span>
+                <button id="sealevel-viz-reset" class="icon-button" type="button">Reset view</button>
+                <button id="sealevel-viz-fullscreen" class="icon-button" type="button" aria-label="Toggle fullscreen" data-fullscreen="sealevel-viz-panel">⛶</button>
+              </div>
+            </div>
+            <div class="phenom-viz-body">
+              <div class="phenom-canvas-wrap">
+                <canvas id="sealevel-canvas" class="phenomenon-canvas" role="img" aria-label="Interactive visualization of global mean sea level anomaly over time"></canvas>
+                <div id="sealevel-tooltip" class="surface-tooltip" role="status" hidden></div>
+              </div>
+            </div>
+            <div class="phenom-viz-footer">
+              <div class="surface-readout">
+                <span>SELECTED OBSERVATION</span>
+                <strong id="sealevel-readout">—</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="player" aria-label="Sea-Level Change record player">
+            <div class="player-topline">
+              <div class="dataset-label">
+                <span class="live-indicator" aria-hidden="true"></span>
+                <span>ANNUAL SEA-LEVEL ANOMALY · TIMELINE</span>
+              </div>
+              <span class="dataset-range" id="sealevel-range">Preparing record…</span>
+            </div>
+            <div class="player-grid">
+              <div class="visual-panel">
+                <div class="reading">
+                  <div>
+                    <p class="reading-label" id="sealevel-date">Waiting for data</p>
+                    <p class="reading-value" id="sealevel-value">--<span> mm</span></p>
+                  </div>
+                  <p class="reading-context">anomaly rel.<br>1993–2008</p>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="sealevel-chart" class="phenomenon-chart-canvas" role="img" aria-label="Timeline chart of annual global mean sea level anomaly"></canvas>
+                  <div class="chart-axis" id="sealevel-axis" aria-hidden="true"></div>
+                </div>
+                <input id="sealevel-timeline" class="timeline-input" type="range" min="0" max="0" value="0" step="1" aria-label="Seek through Sea-Level Change record" disabled>
+                <div class="timeline-hint">
+                  <span id="sealevel-timeline-start">—</span>
+                  <span id="sealevel-timeline-hint">— observations</span>
+                  <span id="sealevel-timeline-end">—</span>
+                </div>
+              </div>
+              <div class="control-panel">
+                <p class="control-kicker">LISTEN TO THE DATA</p>
+                <p class="control-explainer">Each sound represents one year of measurement.</p>
+                <button id="sealevel-play" class="play-button" type="button" disabled>
+                  <span class="play-icon" aria-hidden="true">▶</span>
+                  <span id="sealevel-play-label">Play Sea-Level Change</span>
+                </button>
+                <div class="transport-controls">
+                  <button id="sealevel-stop" class="secondary-button" type="button" disabled>
+                    <span aria-hidden="true">■</span> Stop
+                  </button>
+                  <label class="speed-control">
+                    <span>Speed</span>
+                    <select id="sealevel-speed" aria-label="Playback speed" disabled>
+                      <option value="0.5">0.5×</option>
+                      <option value="1" selected>1×</option>
+                      <option value="2">2×</option>
+                      <option value="4">4×</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="volume-control" for="sealevel-volume">
+                  <span>Master volume</span>
+                  <input id="sealevel-volume" type="range" min="0" max="1" value="0.55" step="0.01" aria-label="Volume" disabled>
+                </label>
+                <p class="playback-status" id="sealevel-playback-status" aria-live="polite">Loading data…</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="sound-guide" aria-labelledby="sealevel-sound-heading">
+            <div class="section-heading">
+              <p class="eyebrow"><span class="eyebrow-line"></span> How to listen</p>
+              <h2 id="sealevel-sound-heading">Three layers. One rising ocean.</h2>
+            </div>
+            <div class="sound-layers">
+              <article class="sound-layer">
+                <span class="layer-number">01</span>
+                <div><h3>TIDE SIGNAL</h3><p>Sea-level anomaly → pitch. Higher GMSL anomaly maps to a higher, deeper tone — hear the seas rise.</p></div>
+                <span class="layer-mark pitch-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">02</span>
+                <div><h3>SURGE PULSE</h3><p>Rate of change → rhythm. Annual rate of sea-level change drives the pulse rate and urgency of the beat layer.</p></div>
+                <span class="layer-mark pulse-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">03</span>
+                <div><h3>WAVE TEXTURE</h3><p>Measurement uncertainty → texture. The uncertainty envelope of each altimetric measurement shapes harmonic variation.</p></div>
+                <span class="layer-mark timbre-mark" aria-hidden="true"></span>
+              </article>
+            </div>
+            <p class="mapping-note">These are artistic sonification mappings. The measurements remain in their scientific units; sound is not a second measurement.</p>
+          </section>
+        </div><!-- /workspace-sealevel -->
+
+        <!-- ══════════════════════════════════════════════════════════
+             WORKSPACE: DEFORESTATION
+        ══════════════════════════════════════════════════════════ -->
+        <div id="workspace-deforestation" class="phenomenon-workspace" role="tabpanel" aria-labelledby="tab-deforestation" hidden>
+          <section class="phenom-intro" aria-labelledby="deforestation-title">
+            <p class="eyebrow"><span class="eyebrow-line"></span> GLOBAL FOREST WATCH · HANSEN ET AL.</p>
+            <h1 id="deforestation-title">Deforestation<br><span>Forests lost, year by year</span></h1>
+            <p class="intro-copy">Listen to the planet's forests disappearing. Each observation represents annual global tree cover loss in millions of hectares, derived from satellite imagery. This measures tree cover loss from all causes — not exclusively deforestation.</p>
+            <div class="phenom-source-row">
+              <span class="phenom-source-badge">SOURCE</span>
+              <span class="phenom-source-text">Global Forest Watch / Hansen et al. MODIS · 2001–present</span>
+            </div>
+            <p class="integrity-note">
+              <span class="note-icon" aria-hidden="true">i</span>
+              This is a sonification of measurements, not a recording of the phenomenon.
+            </p>
+          </section>
+
+          <section class="phenom-viz-panel viz-panel" id="deforestation-viz-panel" aria-labelledby="deforestation-viz-heading">
+            <div class="viz-panel-head">
+              <div>
+                <p class="panel-eyebrow"><span class="live-indicator" aria-hidden="true"></span> GLOBAL FOREST WATCH · ANNUAL TREE COVER LOSS DATA</p>
+                <h2 id="deforestation-viz-heading">Global tree cover loss</h2>
+                <p class="panel-subtitle">Annual tree cover loss (Mha) · Global Forest Watch · 2001–present</p>
+              </div>
+              <div class="surface-actions">
+                <span class="phenom-data-status" id="phenom-status-deforestation">Loading data…</span>
+                <button id="deforestation-viz-reset" class="icon-button" type="button">Reset view</button>
+                <button id="deforestation-viz-fullscreen" class="icon-button" type="button" aria-label="Toggle fullscreen" data-fullscreen="deforestation-viz-panel">⛶</button>
+              </div>
+            </div>
+            <div class="phenom-viz-body">
+              <div class="phenom-canvas-wrap">
+                <canvas id="deforestation-canvas" class="phenomenon-canvas" role="img" aria-label="Interactive visualization of annual global tree cover loss"></canvas>
+                <div id="deforestation-tooltip" class="surface-tooltip" role="status" hidden></div>
+              </div>
+            </div>
+            <div class="phenom-viz-footer">
+              <div class="surface-readout">
+                <span>SELECTED OBSERVATION</span>
+                <strong id="deforestation-readout">—</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="player" aria-label="Deforestation record player">
+            <div class="player-topline">
+              <div class="dataset-label">
+                <span class="live-indicator" aria-hidden="true"></span>
+                <span>ANNUAL TREE COVER LOSS · TIMELINE</span>
+              </div>
+              <span class="dataset-range" id="deforestation-range">Preparing record…</span>
+            </div>
+            <div class="player-grid">
+              <div class="visual-panel">
+                <div class="reading">
+                  <div>
+                    <p class="reading-label" id="deforestation-date">Waiting for data</p>
+                    <p class="reading-value" id="deforestation-value">--<span> Mha</span></p>
+                  </div>
+                  <p class="reading-context">tree cover<br>loss this year</p>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="deforestation-chart" class="phenomenon-chart-canvas" role="img" aria-label="Timeline chart of annual global tree cover loss"></canvas>
+                  <div class="chart-axis" id="deforestation-axis" aria-hidden="true"></div>
+                </div>
+                <input id="deforestation-timeline" class="timeline-input" type="range" min="0" max="0" value="0" step="1" aria-label="Seek through Deforestation record" disabled>
+                <div class="timeline-hint">
+                  <span id="deforestation-timeline-start">—</span>
+                  <span id="deforestation-timeline-hint">— observations</span>
+                  <span id="deforestation-timeline-end">—</span>
+                </div>
+              </div>
+              <div class="control-panel">
+                <p class="control-kicker">LISTEN TO THE DATA</p>
+                <p class="control-explainer">Each sound represents one year of measurement.</p>
+                <button id="deforestation-play" class="play-button" type="button" disabled>
+                  <span class="play-icon" aria-hidden="true">▶</span>
+                  <span id="deforestation-play-label">Play Deforestation</span>
+                </button>
+                <div class="transport-controls">
+                  <button id="deforestation-stop" class="secondary-button" type="button" disabled>
+                    <span aria-hidden="true">■</span> Stop
+                  </button>
+                  <label class="speed-control">
+                    <span>Speed</span>
+                    <select id="deforestation-speed" aria-label="Playback speed" disabled>
+                      <option value="0.5">0.5×</option>
+                      <option value="1" selected>1×</option>
+                      <option value="2">2×</option>
+                      <option value="4">4×</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="volume-control" for="deforestation-volume">
+                  <span>Master volume</span>
+                  <input id="deforestation-volume" type="range" min="0" max="1" value="0.55" step="0.01" aria-label="Volume" disabled>
+                </label>
+                <p class="playback-status" id="deforestation-playback-status" aria-live="polite">Loading data…</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="sound-guide" aria-labelledby="deforestation-sound-heading">
+            <div class="section-heading">
+              <p class="eyebrow"><span class="eyebrow-line"></span> How to listen</p>
+              <h2 id="deforestation-sound-heading">Three layers. One disappearing forest.</h2>
+            </div>
+            <div class="sound-layers">
+              <article class="sound-layer">
+                <span class="layer-number">01</span>
+                <div><h3>CANOPY SIGNAL</h3><p>Loss magnitude → pitch/density. Greater annual tree cover loss maps to a denser, more urgent sonic texture.</p></div>
+                <span class="layer-mark pitch-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">02</span>
+                <div><h3>LOSS PULSE</h3><p>Annual loss rate → rhythm intensity. Year-to-year rate of change in deforestation drives the pulse rhythm.</p></div>
+                <span class="layer-mark pulse-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">03</span>
+                <div><h3>PRIMARY TEXTURE</h3><p>Primary forest fraction → texture. The proportion of loss in primary forest shapes the harmonic character of the sound.</p></div>
+                <span class="layer-mark timbre-mark" aria-hidden="true"></span>
+              </article>
+            </div>
+            <p class="mapping-note">These are artistic sonification mappings. The measurements remain in their scientific units; sound is not a second measurement.</p>
+          </section>
+        </div><!-- /workspace-deforestation -->
+
+        <!-- ══════════════════════════════════════════════════════════
+             WORKSPACE: WILDFIRES
+        ══════════════════════════════════════════════════════════ -->
+        <div id="workspace-wildfires" class="phenomenon-workspace" role="tabpanel" aria-labelledby="tab-wildfires" hidden>
+          <section class="phenom-intro" aria-labelledby="wildfires-title">
+            <p class="eyebrow"><span class="eyebrow-line"></span> NASA FIRMS · MODIS BURNED AREA</p>
+            <h1 id="wildfires-title">Wildfires<br><span>Fire and flame, measured from orbit</span></h1>
+            <p class="intro-copy">Explore global wildfire activity measured from space. Each observation represents estimated global burned area and fire radiative power in a given year, derived from MODIS satellite data. Fire detections do not capture all fires.</p>
+            <div class="phenom-source-row">
+              <span class="phenom-source-badge">SOURCE</span>
+              <span class="phenom-source-text">NASA FIRMS / MODIS Burned Area · GFED4 · 2001–present</span>
+            </div>
+            <p class="integrity-note">
+              <span class="note-icon" aria-hidden="true">i</span>
+              This is a sonification of measurements, not a recording of the phenomenon.
+            </p>
+          </section>
+
+          <section class="phenom-viz-panel viz-panel" id="wildfires-viz-panel" aria-labelledby="wildfires-viz-heading">
+            <div class="viz-panel-head">
+              <div>
+                <p class="panel-eyebrow"><span class="live-indicator" aria-hidden="true"></span> NASA FIRMS · GLOBAL BURNED AREA DATA</p>
+                <h2 id="wildfires-viz-heading">Global burned area &amp; fire activity</h2>
+                <p class="panel-subtitle">Annual global burned area (Mha) and fire radiative power · 2001–present</p>
+              </div>
+              <div class="surface-actions">
+                <span class="phenom-data-status" id="phenom-status-wildfires">Loading data…</span>
+                <button id="wildfires-viz-reset" class="icon-button" type="button">Reset view</button>
+                <button id="wildfires-viz-fullscreen" class="icon-button" type="button" aria-label="Toggle fullscreen" data-fullscreen="wildfires-viz-panel">⛶</button>
+              </div>
+            </div>
+            <div class="phenom-viz-body">
+              <div class="phenom-canvas-wrap">
+                <canvas id="wildfires-canvas" class="phenomenon-canvas" role="img" aria-label="Interactive visualization of annual global burned area and wildfire activity"></canvas>
+                <div id="wildfires-tooltip" class="surface-tooltip" role="status" hidden></div>
+              </div>
+            </div>
+            <div class="phenom-viz-footer">
+              <div class="surface-readout">
+                <span>SELECTED OBSERVATION</span>
+                <strong id="wildfires-readout">—</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="player" aria-label="Wildfires record player">
+            <div class="player-topline">
+              <div class="dataset-label">
+                <span class="live-indicator" aria-hidden="true"></span>
+                <span>ANNUAL BURNED AREA · TIMELINE</span>
+              </div>
+              <span class="dataset-range" id="wildfires-range">Preparing record…</span>
+            </div>
+            <div class="player-grid">
+              <div class="visual-panel">
+                <div class="reading">
+                  <div>
+                    <p class="reading-label" id="wildfires-date">Waiting for data</p>
+                    <p class="reading-value" id="wildfires-value">--<span> Mha</span></p>
+                  </div>
+                  <p class="reading-context">global burned<br>area this year</p>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="wildfires-chart" class="phenomenon-chart-canvas" role="img" aria-label="Timeline chart of annual global burned area and fire radiative power"></canvas>
+                  <div class="chart-axis" id="wildfires-axis" aria-hidden="true"></div>
+                </div>
+                <input id="wildfires-timeline" class="timeline-input" type="range" min="0" max="0" value="0" step="1" aria-label="Seek through Wildfires record" disabled>
+                <div class="timeline-hint">
+                  <span id="wildfires-timeline-start">—</span>
+                  <span id="wildfires-timeline-hint">— observations</span>
+                  <span id="wildfires-timeline-end">—</span>
+                </div>
+              </div>
+              <div class="control-panel">
+                <p class="control-kicker">LISTEN TO THE DATA</p>
+                <p class="control-explainer">Each sound represents one year of measurement.</p>
+                <button id="wildfires-play" class="play-button" type="button" disabled>
+                  <span class="play-icon" aria-hidden="true">▶</span>
+                  <span id="wildfires-play-label">Play Wildfires</span>
+                </button>
+                <div class="transport-controls">
+                  <button id="wildfires-stop" class="secondary-button" type="button" disabled>
+                    <span aria-hidden="true">■</span> Stop
+                  </button>
+                  <label class="speed-control">
+                    <span>Speed</span>
+                    <select id="wildfires-speed" aria-label="Playback speed" disabled>
+                      <option value="0.5">0.5×</option>
+                      <option value="1" selected>1×</option>
+                      <option value="2">2×</option>
+                      <option value="4">4×</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="volume-control" for="wildfires-volume">
+                  <span>Master volume</span>
+                  <input id="wildfires-volume" type="range" min="0" max="1" value="0.55" step="0.01" aria-label="Volume" disabled>
+                </label>
+                <p class="playback-status" id="wildfires-playback-status" aria-live="polite">Loading data…</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="sound-guide" aria-labelledby="wildfires-sound-heading">
+            <div class="section-heading">
+              <p class="eyebrow"><span class="eyebrow-line"></span> How to listen</p>
+              <h2 id="wildfires-sound-heading">Three layers. One burning world.</h2>
+            </div>
+            <div class="sound-layers">
+              <article class="sound-layer">
+                <span class="layer-number">01</span>
+                <div><h3>FIRE SIGNAL</h3><p>Burned area → pitch/intensity. Greater annual burned area maps to a more intense, crackling sonic density.</p></div>
+                <span class="layer-mark pitch-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">02</span>
+                <div><h3>IGNITION PULSE</h3><p>Fire events frequency → rhythm. The number of discrete fire events drives the ignition pulse rhythm.</p></div>
+                <span class="layer-mark pulse-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">03</span>
+                <div><h3>HEAT TEXTURE</h3><p>Radiative power index → texture. The fire radiative power index shapes the harmonic brightness and heat of the sound texture.</p></div>
+                <span class="layer-mark timbre-mark" aria-hidden="true"></span>
+              </article>
+            </div>
+            <p class="mapping-note">These are artistic sonification mappings. The measurements remain in their scientific units; sound is not a second measurement.</p>
+          </section>
+        </div><!-- /workspace-wildfires -->
+
+        <!-- ══════════════════════════════════════════════════════════
+             WORKSPACE: RAINFALL & PRECIPITATION
+        ══════════════════════════════════════════════════════════ -->
+        <div id="workspace-rain" class="phenomenon-workspace" role="tabpanel" aria-labelledby="tab-rain" hidden>
+          <section class="phenom-intro" aria-labelledby="rain-title">
+            <p class="eyebrow"><span class="eyebrow-line"></span> NASA GPCP · GLOBAL PRECIPITATION</p>
+            <h1 id="rain-title">Rainfall &amp; Precipitation<br><span>The planet's water cycle, heard</span></h1>
+            <p class="intro-copy">Explore global precipitation patterns from the NASA Global Precipitation Climatology Project. Each observation represents the annual global mean precipitation rate and its anomaly relative to the 1979–2008 climatology.</p>
+            <div class="phenom-source-row">
+              <span class="phenom-source-badge">SOURCE</span>
+              <span class="phenom-source-text">NASA GPCP · Global Precipitation Climatology Project · 1979–present</span>
+            </div>
+            <p class="integrity-note">
+              <span class="note-icon" aria-hidden="true">i</span>
+              This is a sonification of measurements, not a recording of the phenomenon.
+            </p>
+          </section>
+
+          <section class="phenom-viz-panel viz-panel" id="rain-viz-panel" aria-labelledby="rain-viz-heading">
+            <div class="viz-panel-head">
+              <div>
+                <p class="panel-eyebrow"><span class="live-indicator" aria-hidden="true"></span> NASA GPCP · GLOBAL PRECIPITATION DATA</p>
+                <h2 id="rain-viz-heading">Global mean precipitation rate</h2>
+                <p class="panel-subtitle">Annual global mean precipitation (mm/day) and anomaly · 1979–present</p>
+              </div>
+              <div class="surface-actions">
+                <span class="phenom-data-status" id="phenom-status-rain">Loading data…</span>
+                <button id="rain-viz-reset" class="icon-button" type="button">Reset view</button>
+                <button id="rain-viz-fullscreen" class="icon-button" type="button" aria-label="Toggle fullscreen" data-fullscreen="rain-viz-panel">⛶</button>
+              </div>
+            </div>
+            <div class="phenom-viz-body">
+              <div class="phenom-canvas-wrap">
+                <canvas id="rain-canvas" class="phenomenon-canvas" role="img" aria-label="Interactive visualization of annual global mean precipitation rate"></canvas>
+                <div id="rain-tooltip" class="surface-tooltip" role="status" hidden></div>
+              </div>
+            </div>
+            <div class="phenom-viz-footer">
+              <div class="surface-readout">
+                <span>SELECTED OBSERVATION</span>
+                <strong id="rain-readout">—</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="player" aria-label="Rainfall &amp; Precipitation record player">
+            <div class="player-topline">
+              <div class="dataset-label">
+                <span class="live-indicator" aria-hidden="true"></span>
+                <span>ANNUAL PRECIPITATION RATE · TIMELINE</span>
+              </div>
+              <span class="dataset-range" id="rain-range">Preparing record…</span>
+            </div>
+            <div class="player-grid">
+              <div class="visual-panel">
+                <div class="reading">
+                  <div>
+                    <p class="reading-label" id="rain-date">Waiting for data</p>
+                    <p class="reading-value" id="rain-value">--<span> mm/day</span></p>
+                  </div>
+                  <p class="reading-context">global mean<br>precipitation</p>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="rain-chart" class="phenomenon-chart-canvas" role="img" aria-label="Timeline chart of annual global mean precipitation rate"></canvas>
+                  <div class="chart-axis" id="rain-axis" aria-hidden="true"></div>
+                </div>
+                <input id="rain-timeline" class="timeline-input" type="range" min="0" max="0" value="0" step="1" aria-label="Seek through Rainfall &amp; Precipitation record" disabled>
+                <div class="timeline-hint">
+                  <span id="rain-timeline-start">—</span>
+                  <span id="rain-timeline-hint">— observations</span>
+                  <span id="rain-timeline-end">—</span>
+                </div>
+              </div>
+              <div class="control-panel">
+                <p class="control-kicker">LISTEN TO THE DATA</p>
+                <p class="control-explainer">Each sound represents one year of measurement.</p>
+                <button id="rain-play" class="play-button" type="button" disabled>
+                  <span class="play-icon" aria-hidden="true">▶</span>
+                  <span id="rain-play-label">Play Rainfall &amp; Precipitation</span>
+                </button>
+                <div class="transport-controls">
+                  <button id="rain-stop" class="secondary-button" type="button" disabled>
+                    <span aria-hidden="true">■</span> Stop
+                  </button>
+                  <label class="speed-control">
+                    <span>Speed</span>
+                    <select id="rain-speed" aria-label="Playback speed" disabled>
+                      <option value="0.5">0.5×</option>
+                      <option value="1" selected>1×</option>
+                      <option value="2">2×</option>
+                      <option value="4">4×</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="volume-control" for="rain-volume">
+                  <span>Master volume</span>
+                  <input id="rain-volume" type="range" min="0" max="1" value="0.55" step="0.01" aria-label="Volume" disabled>
+                </label>
+                <p class="playback-status" id="rain-playback-status" aria-live="polite">Loading data…</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="sound-guide" aria-labelledby="rain-sound-heading">
+            <div class="section-heading">
+              <p class="eyebrow"><span class="eyebrow-line"></span> How to listen</p>
+              <h2 id="rain-sound-heading">Three layers. One water cycle.</h2>
+            </div>
+            <div class="sound-layers">
+              <article class="sound-layer">
+                <span class="layer-number">01</span>
+                <div><h3>RAIN SIGNAL</h3><p>Precipitation rate → pitch. Higher global mean precipitation maps to a fuller, more resonant rainfall tone.</p></div>
+                <span class="layer-mark pitch-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">02</span>
+                <div><h3>STORM PULSE</h3><p>Rate anomaly → rhythm. Positive precipitation anomalies (wetter years) drive faster, heavier pulse beats.</p></div>
+                <span class="layer-mark pulse-mark" aria-hidden="true"></span>
+              </article>
+              <article class="sound-layer">
+                <span class="layer-number">03</span>
+                <div><h3>PATTERN TEXTURE</h3><p>Variability → texture. Inter-annual precipitation variability (ENSO influence) shapes the evolving harmonic texture.</p></div>
+                <span class="layer-mark timbre-mark" aria-hidden="true"></span>
+              </article>
+            </div>
+            <p class="mapping-note">These are artistic sonification mappings. The measurements remain in their scientific units; sound is not a second measurement.</p>
+          </section>
+        </div><!-- /workspace-rain -->
+
       </main>
 
       <footer class="footer">
         <span>EARTH JUKEBOX</span>
-        <span>NASA GISTEMP v4 · Global monthly anomalies · Artistic sonification</span>
+        <span>One Planet. Multiple Phenomena. Infinite Ways to Listen. · NASA GISTEMP, NOAA GML, CNES/NASA, GFW, MODIS</span>
       </footer>
     </div>
   </body>

@@ -1965,3 +1965,385 @@ h2 {
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* =====================================================
+   EARTH PHENOMENA EXPLORER — NAVIGATION
+   ===================================================== */
+
+.phenomenon-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgb(12 13 18 / 97%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  margin: 0 calc(-1 * (100vw - min(1440px, calc(100% - 0px))) / 2);
+  padding: 0 max(32px, (100vw - min(1440px, 100vw - 64px)) / 2);
+}
+
+.phenomenon-nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: min(1440px, calc(100% - 0px));
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.phenomenon-nav-inner::-webkit-scrollbar {
+  display: none;
+}
+
+.phenomenon-nav-label {
+  flex-shrink: 0;
+  color: var(--soft);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.phenomenon-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 0;
+}
+
+.phenomenon-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--sans);
+  white-space: nowrap;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.phenomenon-tab:hover {
+  color: var(--text);
+  background: rgb(255 255 255 / 4%);
+  border-color: rgb(255 255 255 / 8%);
+}
+
+.phenomenon-tab.is-active {
+  color: var(--text);
+  background: rgb(255 70 103 / 10%);
+  border-color: rgb(255 70 103 / 25%);
+}
+
+.phenomenon-tab-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.phenomenon-tab-name {
+  font-weight: 500;
+}
+
+.phenomenon-tab-badge {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phenomenon-tab-badge.is-live {
+  background: rgb(81 220 232 / 15%);
+  color: var(--cyan);
+  border: 1px solid rgb(81 220 232 / 25%);
+}
+
+.phenomenon-tab-badge.is-beta {
+  background: rgb(255 154 107 / 12%);
+  color: var(--warm);
+  border: 1px solid rgb(255 154 107 / 22%);
+}
+
+.phenomenon-tab-badge.is-planned {
+  background: rgb(255 255 255 / 5%);
+  color: var(--soft);
+  border: 1px solid rgb(255 255 255 / 10%);
+}
+
+/* =====================================================
+   PHENOMENON WORKSPACES
+   ===================================================== */
+
+.phenomenon-workspace {
+  /* Hidden by default; shown when tab is selected */
+}
+
+.phenomenon-workspace[hidden] {
+  display: none;
+}
+
+.phenomenon-workspace.is-active {
+  display: block;
+}
+
+.phenom-intro {
+  max-width: 760px;
+  padding: 48px 0 34px;
+}
+
+.phenom-source-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 6px 12px;
+  border: 1px solid rgb(81 220 232 / 18%);
+  border-radius: 4px;
+  background: rgb(81 220 232 / 5%);
+}
+
+.phenom-source-badge {
+  color: var(--cyan);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.phenom-source-text {
+  color: #9ba2b4;
+  font-size: 11px;
+}
+
+.phenom-viz-panel {
+  margin-bottom: 20px;
+}
+
+.phenom-viz-body {
+  position: relative;
+  height: clamp(320px, 40vw, 500px);
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 62%, rgb(33 37 56 / 34%), transparent 59%),
+    linear-gradient(180deg, #12141d, #0d0f15);
+}
+
+.phenom-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.phenomenon-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.phenomenon-chart-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.phenom-viz-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-top: 1px solid rgb(255 255 255 / 6%);
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--soft);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phenom-data-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.phenom-data-status.is-ready {
+  color: var(--cyan);
+  border-color: rgb(81 220 232 / 25%);
+}
+
+.phenom-data-status.is-error {
+  color: var(--accent);
+  border-color: rgb(255 70 103 / 25%);
+}
+
+/* CO2 — green-tinted */
+#workspace-co2 .pitch-mark { background: #4ade80; box-shadow: 0 0 8px rgb(74 222 128 / 40%); }
+#workspace-co2 .layer-number { color: #4ade80; }
+#workspace-co2 .eyebrow, #workspace-co2 .intro h1 span { color: #4ade80; }
+
+/* Ocean — blue-tinted */
+#workspace-ocean .pitch-mark { background: #38bdf8; box-shadow: 0 0 8px rgb(56 189 248 / 40%); }
+#workspace-ocean .layer-number { color: #38bdf8; }
+#workspace-ocean .eyebrow, #workspace-ocean .intro h1 span { color: #38bdf8; }
+
+/* Sea level — teal */
+#workspace-sealevel .pitch-mark { background: #2dd4bf; box-shadow: 0 0 8px rgb(45 212 191 / 40%); }
+#workspace-sealevel .layer-number { color: #2dd4bf; }
+#workspace-sealevel .eyebrow, #workspace-sealevel .intro h1 span { color: #2dd4bf; }
+
+/* Deforestation — forest green */
+#workspace-deforestation .pitch-mark { background: #86efac; box-shadow: 0 0 8px rgb(134 239 172 / 40%); }
+#workspace-deforestation .layer-number { color: #86efac; }
+#workspace-deforestation .eyebrow, #workspace-deforestation .intro h1 span { color: #86efac; }
+
+/* Wildfires — orange-red */
+#workspace-wildfires .pitch-mark { background: #fb923c; box-shadow: 0 0 8px rgb(251 146 60 / 40%); }
+#workspace-wildfires .layer-number { color: #fb923c; }
+#workspace-wildfires .eyebrow, #workspace-wildfires .intro h1 span { color: #fb923c; }
+
+/* Rain — periwinkle */
+#workspace-rain .pitch-mark { background: #818cf8; box-shadow: 0 0 8px rgb(129 140 248 / 40%); }
+#workspace-rain .layer-number { color: #818cf8; }
+#workspace-rain .eyebrow, #workspace-rain .intro h1 span { color: #818cf8; }
+
+/* =====================================================
+   PHENOMENON — ADDITIONAL PANELS
+   ===================================================== */
+
+.phenom-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.phenom-chart-panel {
+  min-height: 220px;
+  padding: 20px;
+}
+
+.phenom-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.phenom-stat {
+  flex: 1;
+  min-width: 120px;
+  padding: 12px 16px;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 2%);
+}
+
+.phenom-stat-label {
+  display: block;
+  color: var(--soft);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.phenom-stat-value {
+  display: block;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.phenom-stat-unit {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+@media (max-width: 680px) {
+  .phenomenon-tab-name {
+    display: none;
+  }
+  .phenomenon-tab {
+    padding: 8px 10px;
+  }
+  .phenomenon-tab-icon {
+    font-size: 18px;
+  }
+  .phenomenon-tab-badge {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .phenomenon-nav {
+    margin: 0;
+    padding: 0 16px;
+  }
+}
+
+/* Phenomenon workspace inherits existing sound layer styles */
+.phenomenon-workspace .sound-layers {
+  /* inherits existing grid layout */
+}
+
+/* Phenomenon-specific play button active state */
+.phenomenon-workspace .play-button:not(:disabled) {
+  background: var(--accent);
+}
+
+.phenom-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 20px;
+  border-top: 1px solid rgb(255 255 255 / 5%);
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--soft);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.phenom-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.phenom-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Trend line and observation markers */
+.phenom-trend-line {
+  background: rgb(255 255 255 / 60%);
+}
+.phenom-obs-dot {
+  background: var(--cyan);
+}
+.phenom-selected-dot {
+  background: var(--accent);
+}
