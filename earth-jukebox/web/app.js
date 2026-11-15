@@ -877,8 +877,6 @@ function drawAnnualChart() {
   context.textAlign = "center";
   context.fillText(String(yearMin), x(yearMin), height - 6);
   context.fillText(String(yearMax), x(yearMax), height - 6);
-  context.textAlign = "right";
-  context.fillText("YEAR", width - padding.right, height - 6);
   context.save();
   context.translate(10, height / 2);
   context.rotate(-Math.PI / 2);

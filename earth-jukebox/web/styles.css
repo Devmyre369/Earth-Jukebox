@@ -943,7 +943,7 @@ h1 span {
 
 .chart-axis {
   position: absolute;
-  inset: 9px 0 auto;
+  inset: 9px 8px auto 38px;
   display: flex;
   justify-content: space-between;
   color: #777e72;
