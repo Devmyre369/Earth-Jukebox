@@ -231,7 +231,21 @@ function setYearWindow(startIndex, endIndex) {
 
 function calculateClimateSpectrum() {
   const records = visibleRecords();
-  const segmentLength = Math.min(256, 2 ** Math.floor(Math.log2(records.length)));
+  const runs = [];
+  let currentRun = [];
+  for (const record of records) {
+    if (
+      currentRun.length > 0 &&
+      monthNumber(record) !== monthNumber(currentRun[currentRun.length - 1]) + 1
+    ) {
+      runs.push(currentRun);
+      currentRun = [];
+    }
+    currentRun.push(record);
+  }
+  if (currentRun.length > 0) runs.push(currentRun);
+  const longestRun = Math.max(0, ...runs.map((run) => run.length));
+  const segmentLength = Math.min(256, 2 ** Math.floor(Math.log2(longestRun)));
   if (segmentLength < 32) {
     state.powerSpectrum = [];
     return;
@@ -247,31 +261,33 @@ function calculateClimateSpectrum() {
   const powers = new Float64Array(segmentLength / 2 + 1);
   let segmentCount = 0;
 
-  for (let start = 0; start + segmentLength <= records.length; start += hop) {
-    const values = records.slice(start, start + segmentLength).map((record) => record.anomaly_celsius);
-    const meanTime = (segmentLength - 1) / 2;
-    const meanValue = values.reduce((sum, value) => sum + value, 0) / segmentLength;
-    let numerator = 0;
-    let denominator = 0;
-    values.forEach((value, index) => {
-      numerator += (index - meanTime) * (value - meanValue);
-      denominator += (index - meanTime) ** 2;
-    });
-    const slope = denominator ? numerator / denominator : 0;
-    const detrended = values.map(
-      (value, index) => (value - meanValue - slope * (index - meanTime)) * windowValues[index],
-    );
-    const real = detrended;
-    const imaginary = new Float64Array(segmentLength);
-    fftInPlace(real, imaginary);
+  for (const run of runs) {
+    for (let start = 0; start + segmentLength <= run.length; start += hop) {
+      const values = run.slice(start, start + segmentLength).map((record) => record.anomaly_celsius);
+      const meanTime = (segmentLength - 1) / 2;
+      const meanValue = values.reduce((sum, value) => sum + value, 0) / segmentLength;
+      let numerator = 0;
+      let denominator = 0;
+      values.forEach((value, index) => {
+        numerator += (index - meanTime) * (value - meanValue);
+        denominator += (index - meanTime) ** 2;
+      });
+      const slope = denominator ? numerator / denominator : 0;
+      const detrended = values.map(
+        (value, index) => (value - meanValue - slope * (index - meanTime)) * windowValues[index],
+      );
+      const real = detrended;
+      const imaginary = new Float64Array(segmentLength);
+      fftInPlace(real, imaginary);
 
-    for (let bin = 0; bin <= segmentLength / 2; bin += 1) {
-      let power =
-        (real[bin] * real[bin] + imaginary[bin] * imaginary[bin]) / (sampleRate * windowEnergy);
-      if (bin !== 0 && bin !== segmentLength / 2) power *= 2;
-      powers[bin] += power;
+      for (let bin = 0; bin <= segmentLength / 2; bin += 1) {
+        let power =
+          (real[bin] * real[bin] + imaginary[bin] * imaginary[bin]) / (sampleRate * windowEnergy);
+        if (bin !== 0 && bin !== segmentLength / 2) power *= 2;
+        powers[bin] += power;
+      }
+      segmentCount += 1;
     }
-    segmentCount += 1;
   }
 
   state.powerSpectrum = Array.from(powers, (power, bin) => ({

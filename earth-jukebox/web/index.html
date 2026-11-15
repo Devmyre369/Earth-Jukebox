@@ -91,7 +91,7 @@
           <div class="player-topline">
             <div class="dataset-label">
               <span class="live-indicator" aria-hidden="true"></span>
-              <span>GLOBAL TEMPERATURE ANOMALY</span>
+            <span>MONTHLY TEMPERATURE ANOMALY · TIMELINE</span>
             </div>
             <span class="dataset-range" id="dataset-range">Preparing record…</span>
           </div>
@@ -205,7 +205,7 @@
               <button class="icon-button fullscreen-button" type="button" data-fullscreen="climate-spectrum-panel" aria-label="Toggle temperature power spectrum full screen">⛶</button>
             </div>
             <canvas id="climate-spectrum-canvas" class="science-chart" role="img" aria-label="Welch power spectrum of the monthly global temperature anomaly series"></canvas>
-            <p class="viz-note">Welch periodogram of the continuous monthly record: 256-month Hann windows, 128-month overlap, per-window linear detrending; power averaged across windows. Units: °C² / (cycle/year). Climate variability is not recorded sound.</p>
+            <p class="viz-note">Welch periodogram of contiguous monthly segments: up to 256-month Hann windows (window length is reduced for shorter selections), 50% overlap, per-window linear detrending; power averaged across windows. Units: °C² / (cycle/year). Climate variability is not recorded sound.</p>
           </article>
 
           <article class="viz-panel annual-panel" aria-labelledby="annual-heading">
@@ -345,8 +345,9 @@
               </p>
               <p>
                 The climate power spectrum uses Welch's averaged periodogram on contiguous monthly
-                anomalies with 256-month Hann windows and 128-month overlap. Its units are
-                cycles per year and °C² per (cycle/year), not acoustic frequency.
+                anomalies with Hann windows up to 256 months, 50% overlap, and per-window linear
+                detrending. Its units are cycles per year and °C² per (cycle/year), not acoustic
+                frequency.
               </p>
               <p>
                 The NASA Climate Spiral video is not used as a synchronized timeline. No
