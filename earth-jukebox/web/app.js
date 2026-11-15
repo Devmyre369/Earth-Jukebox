@@ -40,6 +40,7 @@ const elements = {
   audioSpectrumCanvas: document.querySelector("#audio-spectrum-canvas"),
   spectrogramCanvas: document.querySelector("#spectrogram-canvas"),
   audioSignalState: document.querySelector("#audio-signal-state"),
+  audioClock: document.querySelector("#audio-clock"),
   climateSpectrumCanvas: document.querySelector("#climate-spectrum-canvas"),
   annualCanvas: document.querySelector("#annual-canvas"),
   seasonalCanvas: document.querySelector("#seasonal-canvas"),
@@ -329,7 +330,9 @@ function updateReading() {
   if (!record) return;
 
   elements.readingDate.textContent = formatMonth(record);
-  elements.readingValue.innerHTML = `${formatAnomaly(record.anomaly_celsius)}<span> °C</span>`;
+  elements.readingValue.firstChild.nodeValue = formatAnomaly(record.anomaly_celsius);
+  elements.audioClock.textContent =
+    `${String(state.index + 1).padStart(4, "0")} / ${state.records.length.toLocaleString()} · ${formatMonth(record)}`;
   elements.timeline.value = String(state.index);
   elements.surfaceReadout.textContent = `${formatMonth(record)} · ${formatAnomaly(record.anomaly_celsius)} °C`;
   updateLayerReadouts(record);
@@ -543,6 +546,22 @@ function drawSurface() {
     const tick = project(x, -0.75, 0);
     context.fillText(String(year), tick.x, tick.y + 16);
   }
+  context.textAlign = "left";
+  for (const item of [
+    { month: 1, label: "JAN" },
+    { month: 4, label: "APR" },
+    { month: 7, label: "JUL" },
+    { month: 10, label: "OCT" },
+  ]) {
+    const position = project(-1.02, -0.75 + ((item.month - 1) / 11) * 1.5, 0);
+    context.fillText(item.label, position.x - 4, position.y - 5);
+  }
+  context.textAlign = "right";
+  for (const value of [state.minimum, 0, state.maximum]) {
+    const position = project(-1.02, -0.78, (value / anomalyScale) * 0.48);
+    context.fillStyle = value < 0 ? "#70dbe7" : value > 0 ? "#ff8195" : "#c2c7d2";
+    context.fillText(`${value > 0 ? "+" : ""}${value.toFixed(1)}°`, position.x - 5, position.y + 3);
+  }
 }
 
 function closestSurfacePoint(x, y) {
@@ -563,8 +582,8 @@ function showSurfaceTooltip(point, clientX, clientY) {
     elements.surfaceTooltip.hidden = true;
     return;
   }
-  elements.surfaceTooltip.innerHTML =
-    `<strong>${formatMonth(point.record)}</strong><br>${formatAnomaly(point.record.anomaly_celsius)} °C anomaly`;
+  elements.surfaceTooltip.textContent =
+    `${formatMonth(point.record)}\n${formatAnomaly(point.record.anomaly_celsius)} °C anomaly`;
   const bounds = elements.surfaceCanvas.parentElement.getBoundingClientRect();
   elements.surfaceTooltip.style.left = `${Math.max(8, Math.min(bounds.width - 170, clientX - bounds.left + 12))}px`;
   elements.surfaceTooltip.style.top = `${Math.max(8, Math.min(bounds.height - 54, clientY - bounds.top + 10))}px`;
