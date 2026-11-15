@@ -45,6 +45,7 @@ const elements = {
   annualCanvas: document.querySelector("#annual-canvas"),
   seasonalCanvas: document.querySelector("#seasonal-canvas"),
   trendValue: document.querySelector("#trend-value"),
+  trendNote: document.querySelector("#trend-note"),
   melodyValue: document.querySelector("#melody-value"),
   pulseValue: document.querySelector("#pulse-value"),
   atmosphereValue: document.querySelector("#atmosphere-value"),
@@ -323,6 +324,12 @@ function calculateClimateSummaries() {
   }));
 
   const completeYears = state.annualMeans.filter((item) => item.count === 12);
+  if (completeYears.length < 2) {
+    elements.trendValue.textContent = "—";
+    elements.trendNote.textContent = "Select at least two complete years to calculate a slope.";
+    return;
+  }
+  elements.trendNote.textContent = "Partial years are shown, but excluded from the fit.";
   const count = completeYears.length;
   const meanYear = completeYears.reduce((sum, item) => sum + item.year, 0) / (count || 1);
   const meanAnomaly = completeYears.reduce((sum, item) => sum + item.mean, 0) / (count || 1);
@@ -908,7 +915,11 @@ function drawSeasonalChart() {
   context.stroke();
   context.setLineDash([]);
   const slot = plotWidth / 12;
-  const selectedMonth = state.records[state.index]?.month;
+  const selected = state.records[state.index];
+  const { start, end } = visibleYearBounds();
+  const selectedMonth = selected && selected.year >= start && selected.year <= end
+    ? selected.month
+    : null;
   state.monthlyMeans.forEach((item, index) => {
     if (item.mean === null) return;
     const barHeight = Math.abs(zeroY - y(item.mean));
