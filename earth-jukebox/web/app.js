@@ -1726,6 +1726,20 @@ function enableControls() {
   elements.stopButton.disabled = false;
   elements.speed.disabled = false;
   elements.volume.disabled = false;
+  elements.studioMasterVolume.disabled = false;
+  elements.soundPalette.disabled = false;
+  elements.muteButton.disabled = false;
+  elements.resetSound.disabled = false;
+  elements.reverbEnabled.disabled = false;
+  elements.reverbLevel.disabled = false;
+  elements.delayEnabled.disabled = false;
+  elements.delayLevel.disabled = false;
+  for (const layer of LAYER_NAMES) {
+    elements.layerInstruments[layer].disabled = false;
+    elements.layerLevels[layer].disabled = false;
+    elements.layerEnabled[layer].disabled = false;
+  }
+  for (const button of [...elements.soloButtons, ...elements.previewButtons]) button.disabled = false;
 }
 
 async function loadDataset() {
@@ -1740,6 +1754,7 @@ async function loadDataset() {
     state.records = dataset.records;
     state.minimum = minimum;
     state.maximum = maximum;
+    computeObservationMetrics(state.records);
     state.years = [...new Set(state.records.map((record) => record.year))];
     state.startYearIndex = 0;
     state.endYearIndex = state.years.length - 1;
@@ -1762,6 +1777,7 @@ async function loadDataset() {
     elements.yearEnd.disabled = false;
     updateYearWindowLabel();
     updateAxis();
+    updateStudioUI();
     enableControls();
     calculateClimateSpectrum();
     calculateClimateSummaries();
@@ -1786,9 +1802,79 @@ elements.playButton.addEventListener("click", () => {
 elements.stopButton.addEventListener("click", stopPlayback);
 elements.timeline.addEventListener("input", onSeek);
 elements.speed.addEventListener("change", () => {
+  if (state.records.length) updateReading();
   if (state.playing) scheduleNext();
 });
 elements.volume.addEventListener("input", updateVolume);
+elements.studioMasterVolume.addEventListener("input", (event) => {
+  setMasterVolume(Number(event.currentTarget.value));
+});
+elements.soundPalette.addEventListener("change", () => {
+  applySoundPalette(elements.soundPalette.value);
+});
+elements.muteButton.addEventListener("click", () => {
+  state.sound.muted = !state.sound.muted;
+  updateStudioUI();
+  updateAudioRouting();
+});
+elements.resetSound.addEventListener("click", resetSoundConfiguration);
+for (const layer of LAYER_NAMES) {
+  elements.layerInstruments[layer].addEventListener("change", (event) => {
+    state.sound.instruments[layer] = event.currentTarget.value;
+    state.sound.palette = "custom";
+    updateStudioUI();
+    if (state.records.length) updateLayerReadouts(state.records[state.index]);
+  });
+  elements.layerLevels[layer].addEventListener("input", (event) => {
+    state.sound.layers[layer].volume = Number(event.currentTarget.value);
+    state.sound.palette = "custom";
+    updateStudioUI();
+    updateAudioRouting();
+  });
+  elements.layerEnabled[layer].addEventListener("change", (event) => {
+    state.sound.layers[layer].enabled = event.currentTarget.checked;
+    state.sound.palette = "custom";
+    updateStudioUI();
+    updateAudioRouting();
+  });
+}
+for (const button of elements.soloButtons) {
+  button.addEventListener("click", () => {
+    const layer = button.dataset.soloLayer;
+    state.sound.solo = state.sound.solo === layer ? null : layer;
+    updateStudioUI();
+    updateAudioRouting();
+  });
+}
+for (const button of elements.previewButtons) {
+  button.addEventListener("click", () => {
+    previewLayer(button.dataset.previewLayer, button);
+  });
+}
+elements.reverbEnabled.addEventListener("change", () => {
+  state.sound.reverb.enabled = elements.reverbEnabled.checked;
+  state.sound.palette = "custom";
+  updateStudioUI();
+  updateAudioRouting();
+});
+elements.reverbLevel.addEventListener("input", () => {
+  state.sound.reverb.amount = Number(elements.reverbLevel.value);
+  state.sound.palette = "custom";
+  updateStudioUI();
+  updateAudioRouting();
+});
+elements.delayEnabled.addEventListener("change", () => {
+  state.sound.delay.enabled = elements.delayEnabled.checked;
+  state.sound.palette = "custom";
+  updateStudioUI();
+  updateAudioRouting();
+});
+elements.delayLevel.addEventListener("input", () => {
+  state.sound.delay.amount = Number(elements.delayLevel.value);
+  state.sound.palette = "custom";
+  updateStudioUI();
+  updateAudioRouting();
+});
 elements.surfaceMode.addEventListener("change", () => {
   state.surfaceMode = elements.surfaceMode.value;
   drawSurface();
@@ -1925,4 +2011,5 @@ window.addEventListener("pagehide", () => {
   }
 });
 
+updateStudioUI();
 loadDataset();
