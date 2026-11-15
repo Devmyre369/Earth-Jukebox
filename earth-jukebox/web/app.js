@@ -178,6 +178,7 @@ function setYearWindow(startIndex, endIndex) {
   elements.yearStart.value = String(state.startYearIndex);
   elements.yearEnd.value = String(state.endYearIndex);
   updateYearWindowLabel();
+  updateAxis();
   calculateClimateSpectrum();
   calculateClimateSummaries();
   drawSurface();
@@ -614,6 +615,240 @@ function updateAxis() {
   );
 }
 
+function updateLayerReadouts(record) {
+  const normalized = normalizedValue(record);
+  const frequency = MIN_FREQUENCY_HZ * Math.pow(2, normalized * PITCH_OCTAVES);
+  const pulseRate = 1.5 + normalized * 5;
+  const cutoff = 450 + normalized * 3050;
+  elements.melodyValue.textContent = `${frequency.toFixed(1)} Hz`;
+  elements.pulseValue.textContent = `${pulseRate.toFixed(2)} Hz`;
+  elements.atmosphereValue.textContent = `${Math.round(cutoff).toLocaleString()} Hz`;
+  elements.melodyMeter.style.width = `${Math.min(100, (frequency / (MIN_FREQUENCY_HZ * 2 ** PITCH_OCTAVES)) * 100)}%`;
+  elements.pulseMeter.style.width = `${(pulseRate / 6.5) * 100}%`;
+  elements.atmosphereMeter.style.width = `${(cutoff / 3500) * 100}%`;
+}
+
+function drawClimateSpectrum() {
+  const dimensions = setupCanvas(elements.climateSpectrumCanvas);
+  if (!dimensions) return;
+  const { context, width, height } = dimensions;
+  const padding = { left: 48, right: 12, top: 14, bottom: 32 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  context.clearRect(0, 0, width, height);
+  if (state.powerSpectrum.length === 0) {
+    context.fillStyle = "#8b91a2";
+    context.font = "11px sans-serif";
+    context.fillText("Select at least 3 years of observations for a periodogram.", 16, height / 2);
+    return;
+  }
+
+  const maximumFrequency = 6;
+  const bins = state.powerSpectrum.filter((item) => item.frequency <= maximumFrequency);
+  const positivePowers = bins.map((item) => item.density).filter((value) => value > 0);
+  const minLog = Math.log10(Math.max(Math.min(...positivePowers), 1e-10));
+  const maxLog = Math.log10(Math.max(...positivePowers, 1e-9));
+  const x = (frequency) => padding.left + (frequency / maximumFrequency) * plotWidth;
+  const y = (power) => {
+    const logPower = Math.log10(Math.max(power, 10 ** minLog));
+    const ratio = maxLog === minLog ? 0.5 : (logPower - minLog) / (maxLog - minLog);
+    return padding.top + plotHeight * (1 - ratio);
+  };
+
+  context.font = "8px Consolas, monospace";
+  context.textAlign = "right";
+  for (let tick = 0; tick <= maximumFrequency; tick += 1) {
+    const position = x(tick);
+    context.beginPath();
+    context.moveTo(position, padding.top);
+    context.lineTo(position, height - padding.bottom);
+    context.strokeStyle = "rgba(224, 229, 242, 0.07)";
+    context.stroke();
+    context.fillStyle = "#7e8597";
+    context.textAlign = "center";
+    context.fillText(String(tick), position, height - 12);
+  }
+
+  for (let tick = 0; tick <= 2; tick += 1) {
+    const position = padding.top + (plotHeight * tick) / 2;
+    context.beginPath();
+    context.moveTo(padding.left, position);
+    context.lineTo(width - padding.right, position);
+    context.strokeStyle = "rgba(224, 229, 242, 0.08)";
+    context.stroke();
+  }
+
+  context.beginPath();
+  let hasPoint = false;
+  for (const item of bins) {
+    const px = x(item.frequency);
+    const py = y(item.density);
+    if (!hasPoint) {
+      context.moveTo(px, py);
+      hasPoint = true;
+    } else {
+      context.lineTo(px, py);
+    }
+  }
+  context.strokeStyle = "#51dce8";
+  context.lineWidth = 1.7;
+  context.shadowColor = "rgba(81, 220, 232, 0.42)";
+  context.shadowBlur = 7;
+  context.stroke();
+  context.shadowBlur = 0;
+  context.fillStyle = "#858c9d";
+  context.textAlign = "center";
+  context.fillText("FREQUENCY (CYCLES / YEAR)", width / 2, height - 1);
+  context.save();
+  context.translate(12, height / 2);
+  context.rotate(-Math.PI / 2);
+  context.fillText("POWER DENSITY · LOG SCALE", 0, 0);
+  context.restore();
+}
+
+function regressionFor(values) {
+  if (values.length < 2) return { slope: 0, intercept: values[0]?.mean || 0 };
+  const meanYear = values.reduce((sum, item) => sum + item.year, 0) / values.length;
+  const meanValue = values.reduce((sum, item) => sum + item.mean, 0) / values.length;
+  let covariance = 0;
+  let variance = 0;
+  for (const item of values) {
+    covariance += (item.year - meanYear) * (item.mean - meanValue);
+    variance += (item.year - meanYear) ** 2;
+  }
+  const slope = variance ? covariance / variance : 0;
+  return { slope, intercept: meanValue - slope * meanYear };
+}
+
+function drawAnnualChart() {
+  const dimensions = setupCanvas(elements.annualCanvas);
+  if (!dimensions) return;
+  const { context, width, height } = dimensions;
+  const padding = { left: 38, right: 12, top: 12, bottom: 25 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  context.clearRect(0, 0, width, height);
+  const values = state.annualMeans;
+  if (!values.length) return;
+  const valueMin = Math.min(state.minimum, 0);
+  const valueMax = Math.max(state.maximum, 0);
+  const valueRange = valueMax - valueMin || 1;
+  const yearMin = values[0].year;
+  const yearMax = values[values.length - 1].year;
+  const yearRange = Math.max(1, yearMax - yearMin);
+  const x = (year) => padding.left + ((year - yearMin) / yearRange) * plotWidth;
+  const y = (value) => padding.top + ((valueMax - value) / valueRange) * plotHeight;
+  const zeroY = y(0);
+
+  context.font = "8px Consolas, monospace";
+  context.textAlign = "right";
+  for (let tick = 0; tick <= 4; tick += 1) {
+    const position = padding.top + (plotHeight * tick) / 4;
+    const value = valueMax - (valueRange * tick) / 4;
+    context.beginPath();
+    context.moveTo(padding.left, position);
+    context.lineTo(width - padding.right, position);
+    context.strokeStyle = Math.abs(value) < valueRange * 0.02
+      ? "rgba(255,255,255,0.28)"
+      : "rgba(224,229,242,0.07)";
+    context.stroke();
+    context.fillStyle = "#858c9d";
+    context.fillText(value.toFixed(1), padding.left - 5, position + 3);
+  }
+
+  const barWidth = Math.max(1, Math.min(7, plotWidth / values.length * 0.58));
+  for (const item of values) {
+    const px = x(item.year);
+    const py = y(item.mean);
+    context.fillStyle = anomalyColor(item.mean);
+    context.globalAlpha = item.year === state.records[state.index]?.year ? 1 : 0.75;
+    context.fillRect(px - barWidth / 2, Math.min(py, zeroY), barWidth, Math.max(1, Math.abs(zeroY - py)));
+    context.globalAlpha = 1;
+  }
+
+  const regression = regressionFor(values);
+  context.beginPath();
+  context.moveTo(x(yearMin), y(regression.intercept + regression.slope * yearMin));
+  context.lineTo(x(yearMax), y(regression.intercept + regression.slope * yearMax));
+  context.strokeStyle = "#f4f3ef";
+  context.lineWidth = 1.2;
+  context.setLineDash([5, 4]);
+  context.stroke();
+  context.setLineDash([]);
+
+  const selected = state.records[state.index];
+  if (selected && selected.year >= yearMin && selected.year <= yearMax) {
+    context.beginPath();
+    context.moveTo(x(selected.year), padding.top);
+    context.lineTo(x(selected.year), height - padding.bottom);
+    context.strokeStyle = "#ff4667";
+    context.lineWidth = 1;
+    context.stroke();
+  }
+  context.fillStyle = "#858c9d";
+  context.textAlign = "center";
+  context.fillText(String(yearMin), x(yearMin), height - 6);
+  context.fillText(String(yearMax), x(yearMax), height - 6);
+}
+
+function drawSeasonalChart() {
+  const dimensions = setupCanvas(elements.seasonalCanvas);
+  if (!dimensions) return;
+  const { context, width, height } = dimensions;
+  context.clearRect(0, 0, width, height);
+  const padding = { left: 9, right: 7, top: 8, bottom: 19 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const min = Math.min(state.minimum, 0);
+  const max = Math.max(state.maximum, 0);
+  const range = max - min || 1;
+  const y = (value) => padding.top + ((max - value) / range) * plotHeight;
+  const zeroY = y(0);
+  context.beginPath();
+  context.moveTo(padding.left, zeroY);
+  context.lineTo(width - padding.right, zeroY);
+  context.strokeStyle = "rgba(230,235,246,0.2)";
+  context.setLineDash([3, 4]);
+  context.stroke();
+  context.setLineDash([]);
+  const slot = plotWidth / 12;
+  const selectedMonth = state.records[state.index]?.month;
+  state.monthlyMeans.forEach((item, index) => {
+    if (item.mean === null) return;
+    const barHeight = Math.abs(zeroY - y(item.mean));
+    const barWidth = slot * 0.5;
+    context.fillStyle = item.month === selectedMonth ? "#ff4667" : "#51dce8";
+    context.globalAlpha = item.month === selectedMonth ? 1 : 0.72;
+    context.fillRect(
+      padding.left + slot * index + (slot - barWidth) / 2,
+      Math.min(zeroY, y(item.mean)),
+      barWidth,
+      Math.max(1, barHeight),
+    );
+    context.globalAlpha = 1;
+    context.fillStyle = "#82899a";
+    context.font = "7px Consolas, monospace";
+    context.textAlign = "center";
+    context.fillText(String(item.month), padding.left + slot * (index + 0.5), height - 5);
+  });
+}
+
+function selectNearestObservation(year, month) {
+  let selectedIndex = state.index;
+  let distance = Infinity;
+  state.records.forEach((record, index) => {
+    const currentDistance = Math.abs(record.year * 12 + record.month - (year * 12 + month));
+    if (currentDistance < distance) {
+      distance = currentDistance;
+      selectedIndex = index;
+    }
+  });
+  setSelectedIndex(selectedIndex, true);
+  if (!state.playing) {
+    setPlaybackStatus(`Selected ${formatMonth(state.records[selectedIndex])}. Press Play Earth to listen.`);
+  }
+}
+
 function setSelectedIndex(index, soundIfPlaying) {
   stopActiveNotes();
   state.index = Math.max(0, Math.min(index, state.records.length - 1));
@@ -634,7 +869,13 @@ function ensureAudio() {
     state.audioContext = new AudioContext();
     state.masterGain = state.audioContext.createGain();
     state.masterGain.gain.value = Number(elements.volume.value) * 0.18;
-    state.masterGain.connect(state.audioContext.destination);
+    state.analyser = state.audioContext.createAnalyser();
+    state.analyser.fftSize = 2048;
+    state.analyser.smoothingTimeConstant = 0.72;
+    state.masterGain.connect(state.analyser);
+    state.analyser.connect(state.audioContext.destination);
+    state.waveformData = new Uint8Array(state.analyser.fftSize);
+    state.frequencyData = new Uint8Array(state.analyser.frequencyBinCount);
   }
 
   return state.audioContext.resume();
@@ -756,6 +997,7 @@ async function startPlayback() {
     }
     state.playing = true;
     updatePlayButton();
+    startAudioVisuals();
     if (state.lastSoundedIndex !== state.index) playCurrentRecord();
     setPlaybackStatus(`Playing ${formatMonth(state.records[state.index])}.`);
     scheduleNext();
@@ -798,6 +1040,141 @@ function updateVolume() {
   );
 }
 
+function drawWaveform() {
+  const dimensions = setupCanvas(elements.waveformCanvas);
+  if (!dimensions || !state.analyser || !state.waveformData) return;
+  const { context, width, height } = dimensions;
+  state.analyser.getByteTimeDomainData(state.waveformData);
+  context.clearRect(0, 0, width, height);
+  context.beginPath();
+  context.moveTo(0, height / 2);
+  context.lineTo(width, height / 2);
+  context.strokeStyle = "rgba(227,232,245,0.12)";
+  context.stroke();
+  context.beginPath();
+  state.waveformData.forEach((value, index) => {
+    const x = (index / (state.waveformData.length - 1)) * width;
+    const y = (value / 255) * height;
+    if (index === 0) context.moveTo(x, y);
+    else context.lineTo(x, y);
+  });
+  context.strokeStyle = "#51dce8";
+  context.lineWidth = 1.4;
+  context.shadowColor = "rgba(81,220,232,0.35)";
+  context.shadowBlur = 5;
+  context.stroke();
+  context.shadowBlur = 0;
+}
+
+function drawAudioSpectrum() {
+  const dimensions = setupCanvas(elements.audioSpectrumCanvas);
+  if (!dimensions || !state.analyser || !state.frequencyData) return;
+  const { context, width, height } = dimensions;
+  state.analyser.getByteFrequencyData(state.frequencyData);
+  context.clearRect(0, 0, width, height);
+  context.beginPath();
+  for (let x = 0; x < width; x += 1) {
+    const frequency = (x / width) * 4000;
+    const bin = Math.min(
+      state.frequencyData.length - 1,
+      Math.round((frequency * state.analyser.fftSize) / state.audioContext.sampleRate),
+    );
+    const level = state.frequencyData[bin] / 255;
+    const y = height - level * height * 0.92;
+    if (x === 0) context.moveTo(x, y);
+    else context.lineTo(x, y);
+  }
+  context.lineTo(width, height);
+  context.lineTo(0, height);
+  context.closePath();
+  const gradient = context.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, "rgba(255,70,103,0.48)");
+  gradient.addColorStop(1, "rgba(81,220,232,0.06)");
+  context.fillStyle = gradient;
+  context.fill();
+  context.beginPath();
+  for (let x = 0; x < width; x += 1) {
+    const frequency = (x / width) * 4000;
+    const bin = Math.min(
+      state.frequencyData.length - 1,
+      Math.round((frequency * state.analyser.fftSize) / state.audioContext.sampleRate),
+    );
+    const y = height - (state.frequencyData[bin] / 255) * height * 0.92;
+    if (x === 0) context.moveTo(x, y);
+    else context.lineTo(x, y);
+  }
+  context.strokeStyle = "#ff6b85";
+  context.lineWidth = 1.1;
+  context.stroke();
+}
+
+function drawAudioSpectrogramRow() {
+  const dimensions = setupCanvas(elements.spectrogramCanvas);
+  if (!dimensions || !state.analyser || !state.frequencyData) return;
+  const { context, width, height } = dimensions;
+  state.analyser.getByteFrequencyData(state.frequencyData);
+  context.drawImage(elements.spectrogramCanvas, 0, 0, width, height - 1);
+  const maxBin = Math.min(
+    state.frequencyData.length - 1,
+    Math.floor((4000 * state.analyser.fftSize) / state.audioContext.sampleRate),
+  );
+  for (let x = 0; x < width; x += 1) {
+    const bin = Math.min(maxBin, Math.round((x / Math.max(1, width - 1)) * maxBin));
+    const intensity = state.frequencyData[bin] / 255;
+    if (intensity < 0.045) {
+      context.fillStyle = "#11141d";
+    } else if (intensity < 0.52) {
+      context.fillStyle = interpolateColor("#14202a", "#43cbdc", (intensity - 0.045) / 0.475);
+    } else {
+      context.fillStyle = interpolateColor("#43cbdc", "#ff4667", (intensity - 0.52) / 0.48);
+    }
+    context.fillRect(x, 0, 1, 1);
+  }
+}
+
+function animateAudioVisuals(timestamp) {
+  state.audioFrame = null;
+  if (!state.analyser) return;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reducedMotion || timestamp - (state.lastAudioDraw || 0) > 180) {
+    drawWaveform();
+    drawAudioSpectrum();
+    drawAudioSpectrogramRow();
+    state.lastAudioDraw = timestamp;
+  }
+
+  if (state.playing || state.activeNotes.size > 0) {
+    state.audioFrame = window.requestAnimationFrame(animateAudioVisuals);
+  } else {
+    elements.audioSignalState.textContent = "AUDIO IDLE";
+    elements.audioSignalState.classList.remove("is-live");
+  }
+}
+
+function startAudioVisuals() {
+  if (!state.audioFrame) {
+    elements.audioSignalState.textContent = "LIVE OUTPUT";
+    elements.audioSignalState.classList.add("is-live");
+    state.audioFrame = window.requestAnimationFrame(animateAudioVisuals);
+  }
+}
+
+function toggleFullscreen(panel) {
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch((error) => {
+      setPlaybackStatus(`Could not exit full screen: ${error.message}`, true);
+    });
+    return;
+  }
+  if (panel.requestFullscreen) {
+    panel.requestFullscreen().catch((error) => {
+      setPlaybackStatus(`Full screen is unavailable: ${error.message}`, true);
+    });
+  } else {
+    setPlaybackStatus("Full screen is not supported by this browser.", true);
+  }
+}
+
 function enableControls() {
   elements.timeline.max = String(state.records.length - 1);
   elements.timeline.disabled = false;
@@ -819,6 +1196,9 @@ async function loadDataset() {
     state.records = dataset.records;
     state.minimum = minimum;
     state.maximum = maximum;
+    state.years = [...new Set(state.records.map((record) => record.year))];
+    state.startYearIndex = 0;
+    state.endYearIndex = state.years.length - 1;
 
     const first = state.records[0];
     const last = state.records[state.records.length - 1];
@@ -826,9 +1206,23 @@ async function loadDataset() {
     elements.timelineHintEnd.textContent = `${state.records.length.toLocaleString()} observations`;
     elements.timelineEnd.textContent = String(last.year);
     elements.observationCount.textContent = state.records.length.toLocaleString();
+    elements.legendMinimum.textContent = `${formatAnomaly(minimum)}°`;
+    elements.legendMaximum.textContent = `${formatAnomaly(maximum)}°`;
+    elements.yearStart.min = "0";
+    elements.yearStart.max = String(state.years.length - 1);
+    elements.yearStart.value = "0";
+    elements.yearStart.disabled = false;
+    elements.yearEnd.min = "0";
+    elements.yearEnd.max = String(state.years.length - 1);
+    elements.yearEnd.value = String(state.years.length - 1);
+    elements.yearEnd.disabled = false;
+    updateYearWindowLabel();
     updateAxis();
     enableControls();
+    calculateClimateSpectrum();
+    calculateClimateSummaries();
     updateReading();
+    drawClimateSpectrum();
     setStatus("NASA data ready", "ready");
     setPlaybackStatus(`Ready · ${state.records.length.toLocaleString()} monthly observations · ${formatMonth(first)} to ${formatMonth(last)}.`);
   } catch (error) {
@@ -851,6 +1245,130 @@ elements.speed.addEventListener("change", () => {
   if (state.playing) scheduleNext();
 });
 elements.volume.addEventListener("input", updateVolume);
-window.addEventListener("resize", drawTimeline);
+elements.surfaceMode.addEventListener("change", () => {
+  state.surfaceMode = elements.surfaceMode.value;
+  drawSurface();
+});
+elements.surfaceReset.addEventListener("click", () => {
+  state.camera = { yaw: -0.52, pitch: 0.88, zoom: 1, panX: 0, panY: 0 };
+  drawSurface();
+});
+elements.surfaceFullscreen.addEventListener("click", () => {
+  toggleFullscreen(document.querySelector("#climate-surface-panel"));
+});
+elements.showMesh.addEventListener("change", drawSurface);
+elements.showPoints.addEventListener("change", drawSurface);
+elements.yearStart.addEventListener("input", () => {
+  setYearWindow(Number(elements.yearStart.value), state.endYearIndex);
+});
+elements.yearEnd.addEventListener("input", () => {
+  setYearWindow(state.startYearIndex, Number(elements.yearEnd.value));
+});
+document.querySelectorAll("[data-fullscreen]").forEach((button) => {
+  button.addEventListener("click", () => {
+    toggleFullscreen(document.getElementById(button.dataset.fullscreen));
+  });
+});
+document.addEventListener("fullscreenchange", () => {
+  window.requestAnimationFrame(() => {
+    drawSurface();
+    drawTimeline();
+    drawClimateSpectrum();
+    drawAnnualChart();
+    drawSeasonalChart();
+  });
+});
+
+let surfaceDrag = null;
+elements.surfaceCanvas.addEventListener("contextmenu", (event) => event.preventDefault());
+elements.surfaceCanvas.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  surfaceDrag = {
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    lastX: event.clientX,
+    lastY: event.clientY,
+    moved: false,
+    pan: event.shiftKey || event.button === 1 || event.button === 2,
+  };
+  elements.surfaceCanvas.setPointerCapture(event.pointerId);
+});
+elements.surfaceCanvas.addEventListener("pointermove", (event) => {
+  const bounds = elements.surfaceCanvas.getBoundingClientRect();
+  if (surfaceDrag && surfaceDrag.pointerId === event.pointerId) {
+    const deltaX = event.clientX - surfaceDrag.lastX;
+    const deltaY = event.clientY - surfaceDrag.lastY;
+    if (Math.hypot(event.clientX - surfaceDrag.x, event.clientY - surfaceDrag.y) > 3) {
+      surfaceDrag.moved = true;
+    }
+    if (surfaceDrag.pan) {
+      state.camera.panX += deltaX;
+      state.camera.panY += deltaY;
+    } else {
+      state.camera.yaw += deltaX * 0.008;
+      state.camera.pitch = Math.max(0.16, Math.min(1.48, state.camera.pitch + deltaY * 0.006));
+    }
+    surfaceDrag.lastX = event.clientX;
+    surfaceDrag.lastY = event.clientY;
+    drawSurface();
+    elements.surfaceTooltip.hidden = true;
+    return;
+  }
+  const point = closestSurfacePoint(event.clientX - bounds.left, event.clientY - bounds.top);
+  showSurfaceTooltip(point, event.clientX, event.clientY);
+});
+elements.surfaceCanvas.addEventListener("pointerup", (event) => {
+  if (!surfaceDrag || surfaceDrag.pointerId !== event.pointerId) return;
+  if (!surfaceDrag.moved) {
+    const bounds = elements.surfaceCanvas.getBoundingClientRect();
+    const point = closestSurfacePoint(event.clientX - bounds.left, event.clientY - bounds.top);
+    if (point) {
+      const index = state.records.indexOf(point.record);
+      setSelectedIndex(index, true);
+    }
+  }
+  surfaceDrag = null;
+});
+elements.surfaceCanvas.addEventListener("pointercancel", () => {
+  surfaceDrag = null;
+});
+elements.surfaceCanvas.addEventListener("wheel", (event) => {
+  event.preventDefault();
+  state.camera.zoom = Math.max(0.65, Math.min(2.6, state.camera.zoom * (event.deltaY < 0 ? 1.08 : 0.92)));
+  drawSurface();
+}, { passive: false });
+
+elements.annualCanvas.addEventListener("click", (event) => {
+  const bounds = elements.annualCanvas.getBoundingClientRect();
+  const padding = { left: 38, right: 12 };
+  const ratio = Math.max(0, Math.min(1, (event.clientX - bounds.left - padding.left) / (bounds.width - padding.left - padding.right)));
+  if (state.annualMeans.length) {
+    const year = Math.round(
+      state.annualMeans[0].year + ratio * (state.annualMeans[state.annualMeans.length - 1].year - state.annualMeans[0].year),
+    );
+    selectNearestObservation(year, state.records[state.index].month);
+  }
+});
+elements.seasonalCanvas.addEventListener("click", (event) => {
+  const bounds = elements.seasonalCanvas.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(0.999, (event.clientX - bounds.left - 9) / (bounds.width - 16)));
+  const month = Math.floor(ratio * 12) + 1;
+  selectNearestObservation(state.records[state.index].year, month);
+});
+
+window.addEventListener("resize", () => {
+  updateAxis();
+  drawSurface();
+  drawTimeline();
+  drawClimateSpectrum();
+  drawAnnualChart();
+  drawSeasonalChart();
+  if (state.analyser) {
+    drawWaveform();
+    drawAudioSpectrum();
+    drawAudioSpectrogramRow();
+  }
+});
 
 loadDataset();

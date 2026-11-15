@@ -1333,6 +1333,50 @@ h2 {
     width: min(100% - 36px, 600px);
   }
 
+  .viz-panel-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .surface-actions {
+    justify-content: flex-start;
+  }
+
+  .surface-body {
+    grid-template-columns: minmax(0, 1fr) 68px;
+  }
+
+  .surface-legend {
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+
+  .legend-values {
+    right: 24px;
+  }
+
+  .surface-footer {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .year-window {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .year-window .axis-label {
+    grid-column: 1 / -1;
+  }
+
+  .viz-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .audio-panel {
+    grid-column: auto;
+  }
+
   .topbar {
     height: 68px;
   }
@@ -1508,6 +1552,91 @@ h2 {
 
   .transport-controls {
     gap: 10px;
+  }
+
+  .intro {
+    padding-top: 40px;
+  }
+
+  .surface-panel .viz-panel-head {
+    padding: 16px 14px 12px;
+  }
+
+  .surface-actions {
+    width: 100%;
+    gap: 6px;
+  }
+
+  .compact-select {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+
+  .compact-select select {
+    flex: 1;
+  }
+
+  .surface-body {
+    grid-template-columns: minmax(0, 1fr) 54px;
+  }
+
+  .surface-stage {
+    height: 330px;
+  }
+
+  .surface-hint {
+    right: 7px;
+    left: 7px;
+    flex-wrap: wrap;
+    font-size: 7px;
+  }
+
+  .legend-bar {
+    height: 125px;
+  }
+
+  .legend-values {
+    height: 142px;
+    right: 19px;
+    font-size: 7px;
+  }
+
+  .surface-footer {
+    grid-template-columns: 1fr;
+    padding: 13px;
+  }
+
+  .year-window {
+    grid-column: auto;
+  }
+
+  .audio-canvas-grid {
+    grid-template-columns: 1fr;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .spectrogram-plot {
+    grid-column: auto;
+  }
+
+  .seasonal-row {
+    grid-template-columns: 1fr;
+  }
+
+  .trend-readout {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+
+  .trend-readout .axis-label,
+  .trend-readout small {
+    grid-column: 1 / -1;
+  }
+
+  .trend-readout > span:not(.axis-label) {
+    text-align: right;
   }
 }
 
