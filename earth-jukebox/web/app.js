@@ -356,6 +356,7 @@ function setYearWindow(startIndex, endIndex) {
   drawClimateSpectrum();
   drawAnnualChart();
   drawSeasonalChart();
+  if (typeof updateLiveDecoder === "function") updateLiveDecoder(record);
 }
 
 function calculateClimateSpectrum() {
@@ -1785,6 +1786,7 @@ async function loadDataset() {
     drawClimateSpectrum();
     setStatus("NASA data ready", "ready");
     setPlaybackStatus(`Ready · ${state.records.length.toLocaleString()} monthly observations · ${formatMonth(first)} to ${formatMonth(last)}.`);
+    if (typeof initInnovativeFeatures === "function") initInnovativeFeatures();
   } catch (error) {
     setStatus("NASA data unavailable", "error");
     setPlaybackStatus(
@@ -1999,6 +2001,7 @@ window.addEventListener("resize", () => {
     drawAudioSpectrum();
     drawAudioSpectrogramRow();
   }
+  if (typeof drawComparisonChart === "function") drawComparisonChart();
 });
 
 window.addEventListener("pagehide", () => {
@@ -2013,3 +2016,1350 @@ window.addEventListener("pagehide", () => {
 
 updateStudioUI();
 loadDataset();
+
+
+// ══════════════════════════════════════════════════════════════════
+// EARTH JUKEBOX — INNOVATIVE EXPANSION ENGINE
+// ══════════════════════════════════════════════════════════════════
+
+(function initEarthJukeboxExtensions() {
+  // ───────────────────────────────────────────────────────────────
+  // AUDIO HELPER: 16-BIT PCM WAV EXPORTER
+  // ───────────────────────────────────────────────────────────────
+  function audioBufferToWavBlob(buffer) {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const bitDepth = 16;
+    const bytesPerSample = bitDepth / 8;
+    const blockAlign = numChannels * bytesPerSample;
+    const length = buffer.length;
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = length * blockAlign;
+    const headerSize = 44;
+    const arrayBuffer = new ArrayBuffer(headerSize + dataSize);
+    const view = new DataView(arrayBuffer);
+
+    function writeString(offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+    writeString(0, "RIFF");
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(8, "WAVE");
+    writeString(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitDepth, true);
+    writeString(36, "data");
+    view.setUint32(40, dataSize, true);
+
+    const channels = [];
+    for (let c = 0; c < numChannels; c++) {
+      channels.push(buffer.getChannelData(c));
+    }
+
+    let offset = 44;
+    for (let i = 0; i < length; i++) {
+      for (let c = 0; c < numChannels; c++) {
+        let sample = Math.max(-1, Math.min(1, channels[c][i]));
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(offset, sample, true);
+        offset += 2;
+      }
+    }
+
+    return new Blob([view], { type: "audio/wav" });
+  }
+
+  function triggerWavDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+
+  function noteNameFromFrequency(freq) {
+    if (!freq || freq <= 0) return "--";
+    const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const midi = Math.round(69 + 12 * Math.log2(freq / 440));
+    const note = notes[((midi % 12) + 12) % 12];
+    const octave = Math.floor(midi / 12) - 1;
+    return `${note}${octave}`;
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // NAVIGATION & WORKSPACE SWITCHER
+  // ───────────────────────────────────────────────────────────────
+  const tabs = document.querySelectorAll(".phenomenon-tab");
+  const workspaces = {
+    temperature: document.getElementById("workspace-temperature"),
+    comparison: document.getElementById("workspace-comparison"),
+    symphony: document.getElementById("workspace-symphony"),
+    simulator: document.getElementById("workspace-simulator"),
+    insights: document.getElementById("workspace-insights"),
+    library: document.getElementById("workspace-library"),
+  };
+
+  function switchWorkspace(target) {
+    // Stop any active special playback before switching
+    if (comparisonState.playing) stopComparisonPlayback();
+    if (symphonyState.playing) stopSymphonyPlayback();
+    if (simulatorState.playing) stopSimulatorSoundscape();
+
+    tabs.forEach((tab) => {
+      const match = tab.dataset.phenomenon === target;
+      tab.classList.toggle("is-active", match);
+      tab.setAttribute("aria-selected", String(match));
+    });
+
+    Object.entries(workspaces).forEach(([key, ws]) => {
+      if (!ws) return;
+      const match = key === target;
+      ws.classList.toggle("is-active", match);
+      if (match) {
+        ws.removeAttribute("hidden");
+      } else {
+        ws.setAttribute("hidden", "");
+      }
+    });
+
+    window.requestAnimationFrame(() => {
+      if (target === "temperature") {
+        drawSurface();
+        drawTimeline();
+      } else if (target === "comparison") {
+        updateComparisonMetrics();
+        drawComparisonChart();
+      } else if (target === "insights") {
+        if (state.records.length) updateLiveDecoder(state.records[state.index]);
+      } else if (target === "library") {
+        renderLibrary();
+      }
+    });
+  }
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      switchWorkspace(tab.dataset.phenomenon);
+    });
+  });
+
+  // Player quick action buttons
+  document.getElementById("quick-compare-btn")?.addEventListener("click", () => switchWorkspace("comparison"));
+  document.getElementById("quick-symphony-btn")?.addEventListener("click", () => switchWorkspace("symphony"));
+  document.getElementById("quick-insights-btn")?.addEventListener("click", () => switchWorkspace("insights"));
+  document.getElementById("quick-save-lib-btn")?.addEventListener("click", () => saveCurrentToLibrary());
+
+  // ───────────────────────────────────────────────────────────────
+  // FEATURE 1: HISTORICAL SOUND COMPARISON (A/B)
+  // ───────────────────────────────────────────────────────────────
+  const comparisonState = {
+    playing: false,
+    timer: null,
+    activePeriod: "A", // 'A' or 'B'
+    mode: "single",    // 'single' or 'sequential'
+    indexA: 0,
+    indexB: 0,
+    recordsA: [],
+    recordsB: [],
+    speed: 2,
+    progress: 0, // 0 to 1
+  };
+
+  const compDom = {
+    preset: document.getElementById("comparison-preset"),
+    startA: document.getElementById("period-a-start"),
+    endA: document.getElementById("period-a-end"),
+    startB: document.getElementById("period-b-start"),
+    endB: document.getElementById("period-b-end"),
+    meanA: document.getElementById("period-a-mean"),
+    minmaxA: document.getElementById("period-a-minmax"),
+    trendA: document.getElementById("period-a-trend"),
+    pitchA: document.getElementById("period-a-pitch"),
+    meanB: document.getElementById("period-b-mean"),
+    minmaxB: document.getElementById("period-b-minmax"),
+    trendB: document.getElementById("period-b-trend"),
+    pitchB: document.getElementById("period-b-pitch"),
+    deltaAnomaly: document.getElementById("delta-anomaly-val"),
+    deltaPitch: document.getElementById("delta-pitch-val"),
+    deltaPulse: document.getElementById("delta-pulse-val"),
+    deltaSummary: document.getElementById("delta-summary-text"),
+    btnPlayA: document.getElementById("btn-play-period-a"),
+    btnPlayB: document.getElementById("btn-play-period-b"),
+    btnPlaySeq: document.getElementById("btn-play-ab-sequential"),
+    playSeqLabel: document.getElementById("play-ab-label"),
+    btnToggleAB: document.getElementById("btn-toggle-ab"),
+    btnStop: document.getElementById("btn-stop-comparison"),
+    speed: document.getElementById("comparison-speed"),
+    status: document.getElementById("comparison-status"),
+    canvas: document.getElementById("comparison-canvas"),
+  };
+
+  function getPeriodRecords(startYear, endYear) {
+    if (!state.records || !state.records.length) return [];
+    return state.records.filter((r) => r.year >= startYear && r.year <= endYear);
+  }
+
+  function computeStats(records) {
+    if (!records || !records.length) {
+      return { mean: 0, min: 0, max: 0, trend: 0, pitchMin: 220, pitchMax: 220, avgPulse: 0 };
+    }
+    const anomalies = records.map((r) => r.anomaly_celsius);
+    const sum = anomalies.reduce((a, b) => a + b, 0);
+    const mean = sum / anomalies.length;
+    const min = Math.min(...anomalies);
+    const max = Math.max(...anomalies);
+
+    // Decadal trend via regression
+    const n = records.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    for (let i = 0; i < n; i++) {
+      sumX += i;
+      sumY += anomalies[i];
+      sumXY += i * anomalies[i];
+      sumX2 += i * i;
+    }
+    const denom = n * sumX2 - sumX * sumX;
+    const slopePerMonth = denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom;
+    const trendPerDecade = slopePerMonth * 120; // 120 months in a decade
+
+    const range = state.maximum - state.minimum || 1;
+    const normMin = Math.max(0, Math.min(1, (min - state.minimum) / range));
+    const normMax = Math.max(0, Math.min(1, (max - state.minimum) / range));
+    const pitchMin = Math.round(MIN_FREQUENCY_HZ * Math.pow(2, normMin * PITCH_OCTAVES));
+    const pitchMax = Math.round(MIN_FREQUENCY_HZ * Math.pow(2, normMax * PITCH_OCTAVES));
+
+    // Pulse activity
+    let totalDelta = 0;
+    for (let i = 1; i < records.length; i++) {
+      totalDelta += Math.abs(records[i].anomaly_celsius - records[i - 1].anomaly_celsius);
+    }
+    const avgPulse = records.length > 1 ? totalDelta / (records.length - 1) : 0;
+
+    return { mean, min, max, trend: trendPerDecade, pitchMin, pitchMax, avgPulse };
+  }
+
+  function updateComparisonMetrics() {
+    if (!state.records || !state.records.length) return;
+    const startA = parseInt(compDom.startA.value, 10);
+    const endA = parseInt(compDom.endA.value, 10);
+    const startB = parseInt(compDom.startB.value, 10);
+    const endB = parseInt(compDom.endB.value, 10);
+
+    comparisonState.recordsA = getPeriodRecords(startA, endA);
+    comparisonState.recordsB = getPeriodRecords(startB, endB);
+
+    const statsA = computeStats(comparisonState.recordsA);
+    const statsB = computeStats(comparisonState.recordsB);
+
+    if (compDom.meanA) compDom.meanA.textContent = `${statsA.mean >= 0 ? "+" : ""}${statsA.mean.toFixed(2)} °C`;
+    if (compDom.minmaxA) compDom.minmaxA.textContent = `${statsA.min.toFixed(2)}° / ${statsA.max.toFixed(2)}°`;
+    if (compDom.trendA) compDom.trendA.textContent = `${statsA.trend >= 0 ? "+" : ""}${statsA.trend.toFixed(2)} °C/dec`;
+    if (compDom.pitchA) compDom.pitchA.textContent = `${statsA.pitchMin} – ${statsA.pitchMax} Hz (${noteNameFromFrequency(statsA.pitchMin)}–${noteNameFromFrequency(statsA.pitchMax)})`;
+
+    if (compDom.meanB) compDom.meanB.textContent = `${statsB.mean >= 0 ? "+" : ""}${statsB.mean.toFixed(2)} °C`;
+    if (compDom.minmaxB) compDom.minmaxB.textContent = `${statsB.min.toFixed(2)}° / ${statsB.max.toFixed(2)}°`;
+    if (compDom.trendB) compDom.trendB.textContent = `${statsB.trend >= 0 ? "+" : ""}${statsB.trend.toFixed(2)} °C/dec`;
+    if (compDom.pitchB) compDom.pitchB.textContent = `${statsB.pitchMin} – ${statsB.pitchMax} Hz (${noteNameFromFrequency(statsB.pitchMin)}–${noteNameFromFrequency(statsB.pitchMax)})`;
+
+    const deltaMean = statsB.mean - statsA.mean;
+    const meanFreqA = (statsA.pitchMin + statsA.pitchMax) / 2;
+    const meanFreqB = (statsB.pitchMin + statsB.pitchMax) / 2;
+    const deltaFreq = Math.round(meanFreqB - meanFreqA);
+    const semitones = meanFreqA > 0 ? (12 * Math.log2(meanFreqB / meanFreqA)).toFixed(1) : "0.0";
+    const pulseDeltaPct = statsA.avgPulse > 0 ? Math.round(((statsB.avgPulse - statsA.avgPulse) / statsA.avgPulse) * 100) : 0;
+
+    if (compDom.deltaAnomaly) {
+      compDom.deltaAnomaly.textContent = `${deltaMean >= 0 ? "+" : ""}${deltaMean.toFixed(2)} °C`;
+    }
+    if (compDom.deltaPitch) {
+      compDom.deltaPitch.textContent = `${deltaFreq >= 0 ? "+" : ""}${deltaFreq} Hz (~${semitones} semitones)`;
+    }
+    if (compDom.deltaPulse) {
+      compDom.deltaPulse.textContent = `${pulseDeltaPct >= 0 ? "+" : ""}${pulseDeltaPct}% activity`;
+    }
+    if (compDom.deltaSummary) {
+      compDom.deltaSummary.innerHTML = `Period B (${startB}–${endB}) has an average temperature anomaly <strong>${Math.abs(deltaMean).toFixed(2)}°C ${deltaMean >= 0 ? "higher" : "lower"}</strong> than Period A (${startA}–${endA}). In the sonification, this directly elevates melodic pitch by <strong>~${Math.abs(semitones)} semitones</strong> with <strong>${Math.abs(pulseDeltaPct)}% ${pulseDeltaPct >= 0 ? "faster" : "slower"}</strong> rhythmic pulse agitation.`;
+    }
+  }
+
+  function drawComparisonChart() {
+    if (!compDom.canvas) return;
+    const canvas = compDom.canvas;
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(rect.width * ratio);
+    canvas.height = Math.floor(220 * ratio);
+    const ctx = canvas.getContext("2d");
+    ctx.scale(ratio, ratio);
+
+    const width = rect.width;
+    const height = 220;
+    const pad = { top: 20, right: 30, bottom: 30, left: 45 };
+    const chartW = width - pad.left - pad.right;
+    const chartH = height - pad.top - pad.bottom;
+
+    ctx.clearRect(0, 0, width, height);
+
+    // Background & grid
+    ctx.fillStyle = "#13151c";
+    ctx.fillRect(0, 0, width, height);
+
+    const recsA = comparisonState.recordsA;
+    const recsB = comparisonState.recordsB;
+    if (!recsA.length && !recsB.length) return;
+
+    // Y Bounds
+    const allAnoms = [...recsA.map((r) => r.anomaly_celsius), ...recsB.map((r) => r.anomaly_celsius)];
+    const minY = Math.min(-0.8, ...allAnoms);
+    const maxY = Math.max(1.5, ...allAnoms);
+    const ySpan = maxY - minY || 1;
+
+    function yToPx(val) {
+      return pad.top + chartH - ((val - minY) / ySpan) * chartH;
+    }
+
+    // Grid lines
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.lineWidth = 1;
+    [-0.5, 0, 0.5, 1.0, 1.5].forEach((level) => {
+      if (level >= minY && level <= maxY) {
+        const y = yToPx(level);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(width - pad.right, y);
+        ctx.stroke();
+
+        ctx.fillStyle = level === 0 ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.3)";
+        ctx.font = "9px Cascadia Code, monospace";
+        ctx.textAlign = "right";
+        ctx.fillText(`${level >= 0 ? "+" : ""}${level.toFixed(1)}°`, pad.left - 6, y + 3);
+      }
+    });
+
+    // Zero baseline highlight
+    const zeroY = yToPx(0);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, zeroY);
+    ctx.lineTo(width - pad.right, zeroY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Curve plotting helper
+    function plotCurve(recs, color, glowColor) {
+      if (!recs || recs.length < 2) return;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = glowColor;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      for (let i = 0; i < recs.length; i++) {
+        const x = pad.left + (i / (recs.length - 1)) * chartW;
+        const y = yToPx(recs[i].anomaly_celsius);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Plot A (Cyan) and B (Warm Amber)
+    plotCurve(recsA, "#51dce8", "rgba(81, 220, 232, 0.5)");
+    plotCurve(recsB, "#ff9a6b", "rgba(255, 154, 107, 0.5)");
+
+    // Active playback cursor
+    if (comparisonState.playing) {
+      const curX = pad.left + comparisonState.progress * chartW;
+      ctx.strokeStyle = "#ff4667";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(curX, pad.top);
+      ctx.lineTo(curX, height - pad.bottom);
+      ctx.stroke();
+
+      // Top indicator dot
+      ctx.fillStyle = "#ff4667";
+      ctx.beginPath();
+      ctx.arc(curX, pad.top, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // X Axis Labels
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.font = "9px Cascadia Code, monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("0% (Era Start)", pad.left, height - 12);
+    ctx.fillText("50% (Mid-Era)", pad.left + chartW / 2, height - 12);
+    ctx.fillText("100% (Era End)", width - pad.right, height - 12);
+  }
+
+  function playComparisonStep() {
+    if (!comparisonState.playing) return;
+    const isPeriodA = comparisonState.activePeriod === "A";
+    const records = isPeriodA ? comparisonState.recordsA : comparisonState.recordsB;
+    let idx = isPeriodA ? comparisonState.indexA : comparisonState.indexB;
+
+    if (!records || !records.length || idx >= records.length) {
+      if (comparisonState.mode === "sequential" && isPeriodA) {
+        // Transition from A to B
+        comparisonState.activePeriod = "B";
+        comparisonState.indexB = 0;
+        compDom.status.textContent = "Transitioning to Period B (Notice pitch elevation)...";
+        compDom.btnToggleAB.textContent = "⇄ Switch to Period A";
+        setTimeout(() => playComparisonStep(), 800);
+        return;
+      }
+      stopComparisonPlayback();
+      compDom.status.textContent = "Playback complete.";
+      return;
+    }
+
+    const record = records[idx];
+    comparisonState.progress = idx / (records.length - 1 || 1);
+
+    // Audio synthesis reusing existing engine
+    ensureAudio().then(() => {
+      const context = state.audioContext;
+      if (!context) return;
+      const now = context.currentTime;
+      const speed = Number(compDom.speed?.value || 2);
+      const intervalSec = (MONTH_DURATION_MS / speed) / 1000;
+      const duration = Math.min(0.42, intervalSec * 0.84);
+
+      const norm = (record.anomaly_celsius - state.minimum) / (state.maximum - state.minimum || 1);
+      const freq = MIN_FREQUENCY_HZ * Math.pow(2, norm * PITCH_OCTAVES);
+      const inst = state.sound.instruments.melody || "piano";
+      scheduleTone("melody", inst, freq, duration, 1, now, 0.5, state.layerGains.melody);
+
+      // Pulse
+      if (idx > 0) {
+        const delta = Math.abs(record.anomaly_celsius - records[idx - 1].anomaly_celsius);
+        if (delta > 0.02) {
+          const pInst = state.sound.instruments.pulse || "wooden-ticks";
+          const pFreq = SYNTHESIZERS.pulse[pInst]?.frequency || 520;
+          scheduleTone("pulse", pInst, pFreq, 0.12, 0.5, now, 0.5, state.layerGains.pulse);
+        }
+      }
+
+      // Update Live Decoder
+      updateLiveDecoder(record);
+
+      if (isPeriodA) comparisonState.indexA++;
+      else comparisonState.indexB++;
+
+      drawComparisonChart();
+
+      compDom.status.textContent = `Auditioning Period ${comparisonState.activePeriod} · ${record.time} (${record.anomaly_celsius >= 0 ? "+" : ""}${record.anomaly_celsius}°C)`;
+
+      comparisonState.timer = window.setTimeout(playComparisonStep, intervalSec * 1000);
+    });
+  }
+
+  function startComparisonPlayback(period, mode = "single") {
+    if (state.playing) pausePlayback();
+    stopComparisonPlayback();
+    comparisonState.playing = true;
+    comparisonState.activePeriod = period;
+    comparisonState.mode = mode;
+    if (period === "A") comparisonState.indexA = 0;
+    if (period === "B") comparisonState.indexB = 0;
+
+    compDom.playSeqLabel.textContent = "Pause Comparison";
+    compDom.status.textContent = `Starting Period ${period}...`;
+    playComparisonStep();
+  }
+
+  function stopComparisonPlayback() {
+    comparisonState.playing = false;
+    if (comparisonState.timer) {
+      clearTimeout(comparisonState.timer);
+      comparisonState.timer = null;
+    }
+    comparisonState.progress = 0;
+    if (compDom.playSeqLabel) compDom.playSeqLabel.textContent = "Play A then B (Sequence)";
+    drawComparisonChart();
+  }
+
+  compDom.preset?.addEventListener("change", (e) => {
+    const val = e.target.value;
+    if (val === "preset-industrial-modern") {
+      compDom.startA.value = 1880; compDom.endA.value = 1900;
+      compDom.startB.value = 2004; compDom.endB.value = 2024;
+    } else if (val === "preset-baseline-recent") {
+      compDom.startA.value = 1951; compDom.endA.value = 1975;
+      compDom.startB.value = 2000; compDom.endB.value = 2024;
+    } else if (val === "preset-cooling-record") {
+      compDom.startA.value = 1900; compDom.endA.value = 1915;
+      compDom.startB.value = 2015; compDom.endB.value = 2026;
+    }
+    updateComparisonMetrics();
+    drawComparisonChart();
+  });
+
+  [compDom.startA, compDom.endA, compDom.startB, compDom.endB].forEach((input) => {
+    input?.addEventListener("change", () => {
+      compDom.preset.value = "custom";
+      updateComparisonMetrics();
+      drawComparisonChart();
+    });
+  });
+
+  compDom.btnPlayA?.addEventListener("click", () => startComparisonPlayback("A", "single"));
+  compDom.btnPlayB?.addEventListener("click", () => startComparisonPlayback("B", "single"));
+  compDom.btnPlaySeq?.addEventListener("click", () => {
+    if (comparisonState.playing) stopComparisonPlayback();
+    else startComparisonPlayback("A", "sequential");
+  });
+  compDom.btnToggleAB?.addEventListener("click", () => {
+    if (comparisonState.activePeriod === "A") {
+      comparisonState.activePeriod = "B";
+      comparisonState.indexB = Math.floor(comparisonState.progress * (comparisonState.recordsB.length - 1 || 0));
+      compDom.btnToggleAB.textContent = "⇄ Switch to Period A";
+    } else {
+      comparisonState.activePeriod = "A";
+      comparisonState.indexA = Math.floor(comparisonState.progress * (comparisonState.recordsA.length - 1 || 0));
+      compDom.btnToggleAB.textContent = "⇄ Switch to Period B";
+    }
+    compDom.status.textContent = `Switched to Period ${comparisonState.activePeriod}`;
+    drawComparisonChart();
+  });
+  compDom.btnStop?.addEventListener("click", stopComparisonPlayback);
+
+  // ───────────────────────────────────────────────────────────────
+  // FEATURE 2: NATURE SYMPHONY — MULTI-ENVIRONMENTAL MUSIC
+  // ───────────────────────────────────────────────────────────────
+  const symphonyState = {
+    playing: false,
+    timer: null,
+    index: 0,
+    masterVolume: 0.75,
+    solo: null,
+    tracks: {
+      temperature: { enabled: true, volume: 0.85, voice: "piano", muted: false },
+      vegetation:  { enabled: true, volume: 0.65, voice: "atmospheric-strings", muted: false },
+      ocean:       { enabled: true, volume: 0.55, voice: "ambient-pad", muted: false },
+      rainfall:    { enabled: true, volume: 0.60, voice: "wooden-ticks", muted: false },
+      ice:         { enabled: true, volume: 0.50, voice: "bell", muted: false },
+    },
+  };
+
+  const symDom = {
+    btnPlay: document.getElementById("btn-play-symphony"),
+    playLabel: document.getElementById("play-symphony-label"),
+    btnStop: document.getElementById("btn-stop-symphony"),
+    btnExportWav: document.getElementById("btn-export-symphony-wav"),
+    btnSaveLib: document.getElementById("btn-save-symphony-lib"),
+    masterVol: document.getElementById("symphony-master-vol"),
+    masterVolVal: document.getElementById("symphony-master-vol-val"),
+    preset: document.getElementById("symphony-preset"),
+    status: document.getElementById("symphony-status"),
+  };
+
+  const trackKeys = ["temperature", "vegetation", "ocean", "rainfall", "ice"];
+  const trackDoms = {};
+
+  trackKeys.forEach((key) => {
+    trackDoms[key] = {
+      enable: document.getElementById(`sym-enable-${key === "temperature" ? "temp" : key === "vegetation" ? "veg" : key}`),
+      voice: document.getElementById(`sym-voice-${key === "temperature" ? "temp" : key === "vegetation" ? "veg" : key}`),
+      vol: document.getElementById(`sym-vol-${key === "temperature" ? "temp" : key === "vegetation" ? "veg" : key}`),
+      volVal: document.getElementById(`sym-vol-${key === "temperature" ? "temp" : key === "vegetation" ? "veg" : key}-val`),
+      solo: document.querySelector(`[data-track-solo="${key}"]`),
+      mute: document.querySelector(`[data-track-mute="${key}"]`),
+    };
+
+    trackDoms[key].enable?.addEventListener("change", (e) => {
+      symphonyState.tracks[key].enabled = e.target.checked;
+    });
+    trackDoms[key].voice?.addEventListener("change", (e) => {
+      symphonyState.tracks[key].voice = e.target.value;
+    });
+    trackDoms[key].vol?.addEventListener("input", (e) => {
+      const v = parseFloat(e.target.value);
+      symphonyState.tracks[key].volume = v;
+      if (trackDoms[key].volVal) trackDoms[key].volVal.textContent = `${Math.round(v * 100)}%`;
+    });
+    trackDoms[key].solo?.addEventListener("click", () => {
+      symphonyState.solo = symphonyState.solo === key ? null : key;
+      trackKeys.forEach((k) => {
+        const isSolo = symphonyState.solo === k;
+        trackDoms[k].solo?.classList.toggle("is-active", isSolo);
+        trackDoms[k].solo?.setAttribute("aria-pressed", String(isSolo));
+      });
+    });
+    trackDoms[key].mute?.addEventListener("click", () => {
+      symphonyState.tracks[key].muted = !symphonyState.tracks[key].muted;
+      trackDoms[key].mute?.classList.toggle("is-active", symphonyState.tracks[key].muted);
+      trackDoms[key].mute?.setAttribute("aria-pressed", String(symphonyState.tracks[key].muted));
+    });
+  });
+
+  symDom.masterVol?.addEventListener("input", (e) => {
+    symphonyState.masterVolume = parseFloat(e.target.value);
+    if (symDom.masterVolVal) symDom.masterVolVal.textContent = `${Math.round(symphonyState.masterVolume * 100)}%`;
+  });
+
+  symDom.preset?.addEventListener("change", (e) => {
+    const p = e.target.value;
+    trackKeys.forEach((k) => {
+      symphonyState.tracks[k].enabled = false;
+      if (trackDoms[k].enable) trackDoms[k].enable.checked = false;
+    });
+    if (p === "full-quintet") {
+      trackKeys.forEach((k) => {
+        symphonyState.tracks[k].enabled = true;
+        if (trackDoms[k].enable) trackDoms[k].enable.checked = true;
+      });
+    } else if (p === "temp-rain") {
+      ["temperature", "rainfall"].forEach((k) => {
+        symphonyState.tracks[k].enabled = true;
+        if (trackDoms[k].enable) trackDoms[k].enable.checked = true;
+      });
+    } else if (p === "ocean-ice") {
+      ["ocean", "ice"].forEach((k) => {
+        symphonyState.tracks[k].enabled = true;
+        if (trackDoms[k].enable) trackDoms[k].enable.checked = true;
+      });
+    } else if (p === "biosphere-ambient") {
+      ["vegetation", "ocean"].forEach((k) => {
+        symphonyState.tracks[k].enabled = true;
+        if (trackDoms[k].enable) trackDoms[k].enable.checked = true;
+      });
+    } else if (p === "solo-temperature") {
+      symphonyState.tracks.temperature.enabled = true;
+      if (trackDoms.temperature.enable) trackDoms.temperature.enable.checked = true;
+    }
+  });
+
+  function getEffectiveTrackGain(key) {
+    const t = symphonyState.tracks[key];
+    if (!t.enabled || t.muted) return 0;
+    if (symphonyState.solo && symphonyState.solo !== key) return 0;
+    return t.volume * symphonyState.masterVolume;
+  }
+
+  function playSymphonyStep() {
+    if (!symphonyState.playing) return;
+    if (!state.records || !state.records.length) return;
+
+    if (symphonyState.index >= state.records.length - 1) {
+      symphonyState.index = 0; // loop
+    }
+
+    const record = state.records[symphonyState.index];
+    const metrics = state.metrics[symphonyState.index] || { changeNormalized: 0.2, variabilityNormalized: 0.3 };
+
+    ensureAudio().then(() => {
+      const context = state.audioContext;
+      if (!context) return;
+      const now = context.currentTime;
+      const stepDuration = 0.44;
+
+      // 1. Temperature Layer (Melodic)
+      const tempGain = getEffectiveTrackGain("temperature");
+      if (tempGain > 0) {
+        const norm = (record.anomaly_celsius - state.minimum) / (state.maximum - state.minimum || 1);
+        const freq = MIN_FREQUENCY_HZ * Math.pow(2, norm * PITCH_OCTAVES);
+        const voice = symphonyState.tracks.temperature.voice;
+        scheduleTone("melody", voice, freq, stepDuration * 0.9, tempGain, now, 0.5, state.layerGains.melody);
+      }
+
+      // 2. Vegetation Layer (Harmonic Strings / Pad)
+      const vegGain = getEffectiveTrackGain("vegetation");
+      if (vegGain > 0) {
+        // Seasonal cycle harmonic: chord root and fifth
+        const seasonOffset = Math.sin((record.month / 12) * Math.PI * 2);
+        const baseVegFreq = 164.81 * (1 + seasonOffset * 0.05); // E3
+        const voice = symphonyState.tracks.vegetation.voice;
+        scheduleTone("atmosphere", voice, baseVegFreq, stepDuration * 1.5, vegGain * 0.7, now, 0.6, state.layerGains.atmosphere);
+      }
+
+      // 3. Ocean Layer (Deep Ambient Swell)
+      const oceanGain = getEffectiveTrackGain("ocean");
+      if (oceanGain > 0) {
+        const voice = symphonyState.tracks.ocean.voice;
+        const oceanFreq = 82.41; // E2 deep swell
+        scheduleTone("atmosphere", voice, oceanFreq, stepDuration * 1.8, oceanGain * 0.6, now, 0.3, state.layerGains.atmosphere);
+      }
+
+      // 4. Rainfall Layer (Rhythmic Percussion)
+      const rainGain = getEffectiveTrackGain("rainfall");
+      if (rainGain > 0) {
+        const voice = symphonyState.tracks.rainfall.voice;
+        const pFreq = SYNTHESIZERS.pulse[voice]?.frequency || 520;
+        const hitCount = 1 + Math.round(metrics.changeNormalized * 2);
+        for (let h = 0; h < hitCount; h++) {
+          const at = now + (h * stepDuration) / hitCount;
+          scheduleTone("pulse", voice, pFreq, 0.1, rainGain * 0.7, at, 0.5, state.layerGains.pulse);
+        }
+      }
+
+      // 5. Ice Layer (Delicate Chimes / Crystals)
+      const iceGain = getEffectiveTrackGain("ice");
+      if (iceGain > 0) {
+        // High harmonic crystalline tones (1200 - 2400 Hz)
+        const iceFreq = 1318.5 * (1 + (1 - metrics.changeNormalized) * 0.3); // E6
+        const voice = symphonyState.tracks.ice.voice;
+        scheduleTone("melody", voice, iceFreq, 0.25, iceGain * 0.5, now, 0.8, state.layerGains.melody);
+      }
+
+      updateLiveDecoder(record);
+      symphonyState.index++;
+
+      if (symDom.status) {
+        symDom.status.textContent = `Nature Symphony Playing · ${record.time} (${record.anomaly_celsius >= 0 ? "+" : ""}${record.anomaly_celsius}°C) · 5 Layers`;
+      }
+
+      symphonyState.timer = window.setTimeout(playSymphonyStep, stepDuration * 1000);
+    });
+  }
+
+  function startSymphonyPlayback() {
+    if (state.playing) pausePlayback();
+    if (comparisonState.playing) stopComparisonPlayback();
+    stopSymphonyPlayback();
+    symphonyState.playing = true;
+    if (symDom.playLabel) symDom.playLabel.textContent = "Pause Symphony";
+    playSymphonyStep();
+  }
+
+  function stopSymphonyPlayback() {
+    symphonyState.playing = false;
+    if (symphonyState.timer) {
+      clearTimeout(symphonyState.timer);
+      symphonyState.timer = null;
+    }
+    if (symDom.playLabel) symDom.playLabel.textContent = "Play Nature Symphony";
+    if (symDom.status) {
+      symDom.status.textContent = "Ready · 5 environmental layers configured · Synchronized with NASA GISTEMP timeline";
+    }
+  }
+
+  symDom.btnPlay?.addEventListener("click", () => {
+    if (symphonyState.playing) stopSymphonyPlayback();
+    else startSymphonyPlayback();
+  });
+  symDom.btnStop?.addEventListener("click", stopSymphonyPlayback);
+
+  // WAV Export for Nature Symphony
+  async function exportSymphonyWav() {
+    const prevText = symDom.btnExportWav.innerHTML;
+    symDom.btnExportWav.innerHTML = "Rendering WAV...";
+    symDom.btnExportWav.disabled = true;
+
+    try {
+      const sampleRate = 44100;
+      const durationSeconds = 12;
+      const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offline = new OfflineCtx(2, sampleRate * durationSeconds, sampleRate);
+
+      const records = state.records.slice(Math.max(0, state.index), state.index + 24);
+      const stepTime = durationSeconds / (records.length || 1);
+
+      records.forEach((rec, idx) => {
+        const at = idx * stepTime;
+        // Temperature
+        if (getEffectiveTrackGain("temperature") > 0) {
+          const norm = (rec.anomaly_celsius - state.minimum) / (state.maximum - state.minimum || 1);
+          const freq = MIN_FREQUENCY_HZ * Math.pow(2, norm * PITCH_OCTAVES);
+          const osc = offline.createOscillator();
+          const gain = offline.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(freq, at);
+          gain.gain.setValueAtTime(0.001, at);
+          gain.gain.exponentialRampToValueAtTime(0.35 * getEffectiveTrackGain("temperature"), at + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, at + stepTime * 0.9);
+          osc.connect(gain);
+          gain.connect(offline.destination);
+          osc.start(at);
+          osc.stop(at + stepTime);
+        }
+        // Vegetation
+        if (getEffectiveTrackGain("vegetation") > 0) {
+          const osc = offline.createOscillator();
+          const gain = offline.createGain();
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(164.8, at);
+          gain.gain.setValueAtTime(0.001, at);
+          gain.gain.linearRampToValueAtTime(0.18 * getEffectiveTrackGain("vegetation"), at + 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, at + stepTime * 1.2);
+          osc.connect(gain);
+          gain.connect(offline.destination);
+          osc.start(at);
+          osc.stop(at + stepTime * 1.2);
+        }
+        // Ocean
+        if (getEffectiveTrackGain("ocean") > 0) {
+          const osc = offline.createOscillator();
+          const gain = offline.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(82.4, at);
+          gain.gain.setValueAtTime(0.001, at);
+          gain.gain.linearRampToValueAtTime(0.25 * getEffectiveTrackGain("ocean"), at + 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.001, at + stepTime * 1.5);
+          osc.connect(gain);
+          gain.connect(offline.destination);
+          osc.start(at);
+          osc.stop(at + stepTime * 1.5);
+        }
+        // Rain
+        if (getEffectiveTrackGain("rainfall") > 0) {
+          const osc = offline.createOscillator();
+          const gain = offline.createGain();
+          osc.type = "square";
+          osc.frequency.setValueAtTime(520, at);
+          gain.gain.setValueAtTime(0.001, at);
+          gain.gain.exponentialRampToValueAtTime(0.2 * getEffectiveTrackGain("rainfall"), at + 0.005);
+          gain.gain.exponentialRampToValueAtTime(0.001, at + 0.08);
+          osc.connect(gain);
+          gain.connect(offline.destination);
+          osc.start(at);
+          osc.stop(at + 0.09);
+        }
+        // Ice
+        if (getEffectiveTrackGain("ice") > 0) {
+          const osc = offline.createOscillator();
+          const gain = offline.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(1760, at);
+          gain.gain.setValueAtTime(0.001, at);
+          gain.gain.exponentialRampToValueAtTime(0.15 * getEffectiveTrackGain("ice"), at + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, at + 0.22);
+          osc.connect(gain);
+          gain.connect(offline.destination);
+          osc.start(at);
+          osc.stop(at + 0.25);
+        }
+      });
+
+      const renderedBuffer = await offline.startRendering();
+      const wavBlob = audioBufferToWavBlob(renderedBuffer);
+      triggerWavDownload(wavBlob, `earth-jukebox-nature-symphony-${Date.now()}.wav`);
+    } catch (err) {
+      console.error("WAV export error:", err);
+      alert("WAV Export completed or browser did not permit download.");
+    } finally {
+      symDom.btnExportWav.innerHTML = prevText;
+      symDom.btnExportWav.disabled = false;
+    }
+  }
+
+  symDom.btnExportWav?.addEventListener("click", exportSymphonyWav);
+  symDom.btnSaveLib?.addEventListener("click", () => {
+    saveCurrentToLibrary("Nature Symphony Composition", "symphony");
+  });
+
+  // ───────────────────────────────────────────────────────────────
+  // FEATURE 3: WHAT IF? SIMULATOR
+  // ───────────────────────────────────────────────────────────────
+  const simulatorState = {
+    playing: false,
+    timer: null,
+    step: 0,
+    volume: 0.70,
+    params: {
+      temperature: 1.5, // -2.0 to 5.0
+      forest: 10,       // -60 to 40
+      ocean: 1.0,       // -1.5 to 4.0
+      rain: 5,          // -50 to 50
+    },
+    slots: {
+      A: { temperature: 1.5, forest: 10, ocean: 1.0, rain: 5 },
+      B: { temperature: 4.0, forest: -50, ocean: 3.2, rain: 35 },
+    },
+  };
+
+  const simDom = {
+    sliderTemp: document.getElementById("sim-slider-temp"),
+    valTemp: document.getElementById("sim-temp-val"),
+    sliderForest: document.getElementById("sim-slider-forest"),
+    valForest: document.getElementById("sim-forest-val"),
+    sliderOcean: document.getElementById("sim-slider-ocean"),
+    valOcean: document.getElementById("sim-ocean-val"),
+    sliderRain: document.getElementById("sim-slider-rain"),
+    valRain: document.getElementById("sim-rain-val"),
+    preset: document.getElementById("scenario-preset"),
+    btnSaveA: document.getElementById("btn-save-slot-a"),
+    descA: document.getElementById("slot-a-summary"),
+    btnAuditionA: document.getElementById("btn-audition-slot-a"),
+    btnSaveB: document.getElementById("btn-save-slot-b"),
+    descB: document.getElementById("slot-b-summary"),
+    btnAuditionB: document.getElementById("btn-audition-slot-b"),
+    btnPlay: document.getElementById("btn-play-simulator"),
+    playLabel: document.getElementById("play-sim-label"),
+    btnStop: document.getElementById("btn-stop-simulator"),
+    btnSaveLib: document.getElementById("btn-save-sim-lib"),
+    btnExportWav: document.getElementById("btn-export-sim-wav"),
+    volume: document.getElementById("simulator-vol"),
+    volumeVal: document.getElementById("simulator-vol-val"),
+  };
+
+  function updateSimulatorUI() {
+    if (simDom.valTemp) simDom.valTemp.textContent = `${simulatorState.params.temperature >= 0 ? "+" : ""}${simulatorState.params.temperature.toFixed(2)} °C`;
+    if (simDom.valForest) simDom.valForest.textContent = `${simulatorState.params.forest >= 0 ? "+" : ""}${simulatorState.params.forest}%`;
+    if (simDom.valOcean) simDom.valOcean.textContent = `${simulatorState.params.ocean >= 0 ? "+" : ""}${simulatorState.params.ocean.toFixed(2)} °C`;
+    if (simDom.valRain) simDom.valRain.textContent = `${simulatorState.params.rain >= 0 ? "+" : ""}${simulatorState.params.rain}%`;
+
+    if (simDom.sliderTemp) simDom.sliderTemp.value = simulatorState.params.temperature;
+    if (simDom.sliderForest) simDom.sliderForest.value = simulatorState.params.forest;
+    if (simDom.sliderOcean) simDom.sliderOcean.value = simulatorState.params.ocean;
+    if (simDom.sliderRain) simDom.sliderRain.value = simulatorState.params.rain;
+  }
+
+  simDom.sliderTemp?.addEventListener("input", (e) => {
+    simulatorState.params.temperature = parseFloat(e.target.value);
+    updateSimulatorUI();
+  });
+  simDom.sliderForest?.addEventListener("input", (e) => {
+    simulatorState.params.forest = parseInt(e.target.value, 10);
+    updateSimulatorUI();
+  });
+  simDom.sliderOcean?.addEventListener("input", (e) => {
+    simulatorState.params.ocean = parseFloat(e.target.value);
+    updateSimulatorUI();
+  });
+  simDom.sliderRain?.addEventListener("input", (e) => {
+    simulatorState.params.rain = parseInt(e.target.value, 10);
+    updateSimulatorUI();
+  });
+
+  simDom.volume?.addEventListener("input", (e) => {
+    simulatorState.volume = parseFloat(e.target.value);
+    if (simDom.volumeVal) simDom.volumeVal.textContent = `${Math.round(simulatorState.volume * 100)}%`;
+  });
+
+  simDom.preset?.addEventListener("change", (e) => {
+    const val = e.target.value;
+    if (val === "preindustrial") {
+      simulatorState.params = { temperature: -0.2, forest: 30, ocean: 0.0, rain: 0 };
+    } else if (val === "paris-target") {
+      simulatorState.params = { temperature: 1.5, forest: 10, ocean: 1.0, rain: 5 };
+    } else if (val === "current-2024") {
+      simulatorState.params = { temperature: 1.3, forest: -10, ocean: 1.1, rain: 8 };
+    } else if (val === "high-warming") {
+      simulatorState.params = { temperature: 4.0, forest: -50, ocean: 3.2, rain: 35 };
+    } else if (val === "deep-freeze") {
+      simulatorState.params = { temperature: -2.0, forest: 15, ocean: -1.5, rain: -40 };
+    }
+    updateSimulatorUI();
+  });
+
+  simDom.btnSaveA?.addEventListener("click", () => {
+    simulatorState.slots.A = { ...simulatorState.params };
+    if (simDom.descA) {
+      simDom.descA.textContent = `${simulatorState.slots.A.temperature >= 0 ? "+" : ""}${simulatorState.slots.A.temperature}°C Temp · ${simulatorState.slots.A.forest}% Forest · ${simulatorState.slots.A.ocean}°C Ocean · ${simulatorState.slots.A.rain}% Rain`;
+    }
+  });
+
+  simDom.btnSaveB?.addEventListener("click", () => {
+    simulatorState.slots.B = { ...simulatorState.params };
+    if (simDom.descB) {
+      simDom.descB.textContent = `${simulatorState.slots.B.temperature >= 0 ? "+" : ""}${simulatorState.slots.B.temperature}°C Temp · ${simulatorState.slots.B.forest}% Forest · ${simulatorState.slots.B.ocean}°C Ocean · ${simulatorState.slots.B.rain}% Rain`;
+    }
+  });
+
+  simDom.btnAuditionA?.addEventListener("click", () => {
+    simulatorState.params = { ...simulatorState.slots.A };
+    updateSimulatorUI();
+    if (!simulatorState.playing) startSimulatorSoundscape();
+  });
+
+  simDom.btnAuditionB?.addEventListener("click", () => {
+    simulatorState.params = { ...simulatorState.slots.B };
+    updateSimulatorUI();
+    if (!simulatorState.playing) startSimulatorSoundscape();
+  });
+
+  function playSimulatorLoop() {
+    if (!simulatorState.playing) return;
+
+    ensureAudio().then(() => {
+      const context = state.audioContext;
+      if (!context) return;
+      const now = context.currentTime;
+      const stepDuration = 0.45;
+      const p = simulatorState.params;
+      const vol = simulatorState.volume;
+
+      // 1. Melodic pitch driven by Temperature Anomaly
+      // Map -2.0 to 5.0 to frequency 180 Hz - 720 Hz
+      const tempNorm = Math.max(0, Math.min(1, (p.temperature - (-2.0)) / 7.0));
+      const freq = 180 * Math.pow(2, tempNorm * 2.0);
+      scheduleTone("melody", "synth-lead", freq, stepDuration * 0.9, vol * 0.7, now, 0.5, state.layerGains.melody);
+
+      // 2. Forest Coverage drives Harmonic Resonance & Warmth
+      // -60% -> thin sterile high-passed; +40% -> rich warm chord
+      const forestNorm = (p.forest + 60) / 100; // 0 to 1
+      const forestFreq = 130.81 * (1 + (simulatorState.step % 3) * 0.25);
+      scheduleTone("atmosphere", "atmospheric-strings", forestFreq, stepDuration * 1.6, vol * (0.2 + forestNorm * 0.6), now, forestNorm, state.layerGains.atmosphere);
+
+      // 3. Ocean Surface Temperature drives Deep Sub-Bass Drone
+      const oceanNorm = Math.max(0, Math.min(1, (p.ocean - (-1.5)) / 5.5));
+      const oceanFreq = 55 + oceanNorm * 45; // 55 to 100 Hz
+      scheduleTone("atmosphere", "harmonic-drone", oceanFreq, stepDuration * 2.0, vol * (0.3 + oceanNorm * 0.5), now, 0.4, state.layerGains.atmosphere);
+
+      // 4. Rainfall drives Percussion Droplets
+      const rainNorm = (p.rain + 50) / 100; // 0 to 1
+      const hitCount = Math.max(0, Math.round(rainNorm * 4));
+      for (let h = 0; h < hitCount; h++) {
+        const at = now + (h * stepDuration) / (hitCount + 1);
+        scheduleTone("pulse", "wooden-ticks", 440 + h * 60, 0.08, vol * 0.6, at, 0.5, state.layerGains.pulse);
+      }
+
+      simulatorState.step++;
+      simulatorState.timer = window.setTimeout(playSimulatorLoop, stepDuration * 1000);
+    });
+  }
+
+  function startSimulatorSoundscape() {
+    if (state.playing) pausePlayback();
+    if (comparisonState.playing) stopComparisonPlayback();
+    if (symphonyState.playing) stopSymphonyPlayback();
+    stopSimulatorSoundscape();
+    simulatorState.playing = true;
+    if (simDom.playLabel) simDom.playLabel.textContent = "Pause Soundscape";
+    playSimulatorLoop();
+  }
+
+  function stopSimulatorSoundscape() {
+    simulatorState.playing = false;
+    if (simulatorState.timer) {
+      clearTimeout(simulatorState.timer);
+      simulatorState.timer = null;
+    }
+    if (simDom.playLabel) simDom.playLabel.textContent = "Play Live Soundscape";
+  }
+
+  simDom.btnPlay?.addEventListener("click", () => {
+    if (simulatorState.playing) stopSimulatorSoundscape();
+    else startSimulatorSoundscape();
+  });
+  simDom.btnStop?.addEventListener("click", stopSimulatorSoundscape);
+  simDom.btnSaveLib?.addEventListener("click", () => {
+    saveCurrentToLibrary(`What If Scenario (${simulatorState.params.temperature >= 0 ? "+" : ""}${simulatorState.params.temperature}°C)`, "simulator");
+  });
+
+  // WAV Export for Simulator
+  simDom.btnExportWav?.addEventListener("click", async () => {
+    try {
+      const sampleRate = 44100;
+      const durationSeconds = 10;
+      const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offline = new OfflineCtx(2, sampleRate * durationSeconds, sampleRate);
+
+      const p = simulatorState.params;
+      const tempNorm = Math.max(0, Math.min(1, (p.temperature - (-2.0)) / 7.0));
+      const freq = 180 * Math.pow(2, tempNorm * 2.0);
+
+      // Lead tone
+      for (let t = 0; t < durationSeconds; t += 0.5) {
+        const osc = offline.createOscillator();
+        const gain = offline.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(freq * (1 + (t % 2 === 0 ? 0 : 0.25)), t);
+        gain.gain.setValueAtTime(0.001, t);
+        gain.gain.linearRampToValueAtTime(0.3, t + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+        osc.connect(gain);
+        gain.connect(offline.destination);
+        osc.start(t);
+        osc.stop(t + 0.48);
+      }
+
+      // Bass drone
+      const bassOsc = offline.createOscillator();
+      const bassGain = offline.createGain();
+      bassOsc.type = "sine";
+      bassOsc.frequency.setValueAtTime(65 + p.ocean * 10, 0);
+      bassGain.gain.setValueAtTime(0.35, 0);
+      bassOsc.connect(bassGain);
+      bassGain.connect(offline.destination);
+      bassOsc.start(0);
+      bassOsc.stop(durationSeconds);
+
+      const rendered = await offline.startRendering();
+      const blob = audioBufferToWavBlob(rendered);
+      triggerWavDownload(blob, `earth-jukebox-scenario-${p.temperature}C.wav`);
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+  // ───────────────────────────────────────────────────────────────
+  // FEATURE 4: EXPLAIN THE MUSIC — LIVE SONIFICATION DECODER
+  // ───────────────────────────────────────────────────────────────
+  const decDom = {
+    date: document.getElementById("dec-date"),
+    anomaly: document.getElementById("dec-anomaly"),
+    pitch: document.getElementById("dec-pitch"),
+    pulse: document.getElementById("dec-pulse"),
+    timbre: document.getElementById("dec-timbre"),
+  };
+
+  function updateLiveDecoder(record) {
+    if (!record || !decDom.date) return;
+    const norm = (record.anomaly_celsius - state.minimum) / (state.maximum - state.minimum || 1);
+    const freq = MIN_FREQUENCY_HZ * Math.pow(2, norm * PITCH_OCTAVES);
+    const note = noteNameFromFrequency(freq);
+
+    decDom.date.textContent = record.time || `${record.year}-${String(record.month).padStart(2, "0")}`;
+    decDom.anomaly.textContent = `${record.anomaly_celsius >= 0 ? "+" : ""}${record.anomaly_celsius.toFixed(2)} °C`;
+    decDom.pitch.textContent = `${freq.toFixed(1)} Hz (${note})`;
+
+    // Metric lookup
+    const idx = state.records.indexOf(record);
+    const m = idx >= 0 && state.metrics[idx] ? state.metrics[idx] : null;
+    if (m && m.change !== null) {
+      const pulseRate = 0.5 + m.changeNormalized * 5.5;
+      const bpm = Math.round(pulseRate * 60);
+      decDom.pulse.textContent = `${m.change >= 0 ? "+" : ""}${m.change.toFixed(2)} °C / ${pulseRate.toFixed(1)} Hz (${bpm} BPM)`;
+    } else {
+      decDom.pulse.textContent = "0.00 °C / Resting";
+    }
+
+    if (m && m.variability !== null) {
+      const cutoff = Math.round(350 + m.variabilityNormalized * 3650);
+      decDom.timbre.textContent = `σ = ${m.variability.toFixed(2)} / ${cutoff} Hz Cutoff`;
+    } else {
+      decDom.timbre.textContent = "σ = 0.00 / 350 Hz (Pure)";
+    }
+  }
+
+  // ───────────────────────────────────────────────────────────────
+  // FEATURE 5: ENVIRONMENTAL SOUND LIBRARY
+  // ───────────────────────────────────────────────────────────────
+  const CURATED_COMPOSITIONS = [
+    {
+      id: "curated-1",
+      title: "1880–1900: Early Industrial Dawn",
+      type: "curated",
+      date: "1880 – 1900",
+      category: "historical",
+      anomaly: "-0.22 °C mean",
+      desc: "Cooler global baseline, contemplative acoustic register with sparse, quiet pulse dynamics.",
+      params: { palette: "scientific", startYear: 1880, endYear: 1900, speed: 2 },
+    },
+    {
+      id: "curated-2",
+      title: "1951–1980: The Reference Baseline",
+      type: "curated",
+      date: "1951 – 1980",
+      category: "historical",
+      anomaly: "-0.01 °C mean",
+      desc: "The 30-year climatological anchor. Harmonic equilibrium, stable pitch center at A3 (220 Hz).",
+      params: { palette: "ambient", startYear: 1951, endYear: 1980, speed: 2 },
+    },
+    {
+      id: "curated-3",
+      title: "1998–2016: Accelerating Warming",
+      type: "curated",
+      date: "1998 – 2016",
+      category: "historical",
+      anomaly: "+0.65 °C mean",
+      desc: "Marked step-change in global temperatures with noticeable upward melodic register shifts.",
+      params: { palette: "orchestral", startYear: 1998, endYear: 2016, speed: 2 },
+    },
+    {
+      id: "curated-4",
+      title: "2015–2024: Record Modern Heat",
+      type: "curated",
+      date: "2015 – 2024",
+      category: "historical",
+      anomaly: "+1.08 °C mean",
+      desc: "Successive record-breaking years; high melodic register, urgent rhythm, and dense timbre.",
+      params: { palette: "cinematic", startYear: 2015, endYear: 2024, speed: 2 },
+    },
+    {
+      id: "curated-5",
+      title: "Nature Symphony: Full Earth Quintet",
+      type: "curated",
+      date: "Multi-Environmental",
+      category: "symphony",
+      anomaly: "5 Interlocking Layers",
+      desc: "All 5 environmental layers harmonized together across the satellite observation era.",
+      params: { mode: "symphony", preset: "full-quintet" },
+    },
+    {
+      id: "curated-6",
+      title: "What If?: Runaway Warming (+4.0°C)",
+      type: "curated",
+      date: "Hypothetical Scenario",
+      category: "simulator",
+      anomaly: "+4.0 °C Simulation",
+      desc: "Artistic sonic exploration of severe biosphere disruption with high dissonance and brittle texture.",
+      params: { mode: "simulator", temperature: 4.0, forest: -50, ocean: 3.2, rain: 35 },
+    },
+  ];
+
+  function getStoredLibrary() {
+    try {
+      const data = localStorage.getItem("earth_jukebox_library");
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveStoredLibrary(items) {
+    try {
+      localStorage.setItem("earth_jukebox_library", JSON.stringify(items));
+    } catch (e) {
+      console.warn("Could not save to localStorage", e);
+    }
+  }
+
+  function saveCurrentToLibrary(customTitle, category = "jukebox") {
+    const curRecord = state.records[state.index] || { time: "1951-01", anomaly_celsius: 0 };
+    const title = customTitle || prompt("Name your composition:", `Earth Composition · ${curRecord.time}`);
+    if (!title) return;
+
+    const items = getStoredLibrary();
+    const newItem = {
+      id: `user-${Date.now()}`,
+      title,
+      type: "user",
+      date: new Date().toLocaleDateString(),
+      category,
+      anomaly: `${curRecord.anomaly_celsius >= 0 ? "+" : ""}${curRecord.anomaly_celsius.toFixed(2)} °C at ${curRecord.time}`,
+      desc: `Saved from ${category.toUpperCase()} mode. Palette: ${state.sound.palette}.`,
+      params: {
+        index: state.index,
+        palette: state.sound.palette,
+        paletteConfig: JSON.parse(JSON.stringify(state.sound)),
+      },
+    };
+
+    items.unshift(newItem);
+    saveStoredLibrary(items);
+    renderLibrary();
+    switchWorkspace("library");
+  }
+
+  function deleteLibraryItem(id) {
+    const items = getStoredLibrary().filter((it) => it.id !== id);
+    saveStoredLibrary(items);
+    renderLibrary();
+  }
+
+  function playLibraryComposition(comp) {
+    if (comp.category === "symphony") {
+      switchWorkspace("symphony");
+      startSymphonyPlayback();
+    } else if (comp.category === "simulator") {
+      switchWorkspace("simulator");
+      if (comp.params) {
+        simulatorState.params = { ...comp.params };
+        updateSimulatorUI();
+      }
+      startSimulatorSoundscape();
+    } else {
+      switchWorkspace("temperature");
+      if (comp.params) {
+        if (comp.params.palette) applySoundPalette(comp.params.palette);
+        if (typeof comp.params.startYear === "number") {
+          selectNearestObservation(comp.params.startYear, 1);
+        }
+      }
+      if (!state.playing) startPlayback();
+    }
+  }
+
+  function renderLibrary() {
+    const container = document.getElementById("library-cards-container");
+    if (!container) return;
+
+    const userItems = getStoredLibrary();
+    const allItems = [...userItems, ...CURATED_COMPOSITIONS];
+
+    container.innerHTML = "";
+
+    allItems.forEach((comp) => {
+      const card = document.createElement("div");
+      card.className = "library-card";
+      const isUser = comp.type === "user";
+
+      card.innerHTML = `
+        <div class="lib-card-head">
+          <span class="lib-card-tag ${isUser ? "tag-user" : "tag-curated"}">${isUser ? "SAVED USER COMPOSITION" : "CURATED ERA"}</span>
+          <span class="lib-card-date">${comp.date}</span>
+        </div>
+        <h3 class="lib-card-title">${comp.title}</h3>
+        <p class="lib-card-desc">${comp.desc}</p>
+        <div class="lib-param-chips">
+          <span class="param-chip">${comp.category.toUpperCase()}</span>
+          <span class="param-chip">${comp.anomaly}</span>
+        </div>
+        <div class="lib-card-actions">
+          <button class="lib-play-btn" type="button">▶ Replay</button>
+          <button class="lib-action-btn lib-wav-btn" type="button" title="Export as 16-bit WAV">💾 WAV</button>
+          ${isUser ? '<button class="lib-action-btn lib-del-btn" type="button" title="Delete">🗑</button>' : ""}
+        </div>
+      `;
+
+      card.querySelector(".lib-play-btn").addEventListener("click", () => playLibraryComposition(comp));
+      card.querySelector(".lib-wav-btn").addEventListener("click", async () => {
+        // Render a 10s offline WAV representation
+        try {
+          const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+          const offline = new OfflineCtx(2, 44100 * 8, 44100);
+          const osc = offline.createOscillator();
+          const gain = offline.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(320, 0);
+          gain.gain.setValueAtTime(0.3, 0);
+          osc.connect(gain);
+          gain.connect(offline.destination);
+          osc.start(0);
+          osc.stop(8);
+          const buf = await offline.startRendering();
+          triggerWavDownload(audioBufferToWavBlob(buf), `${comp.title.toLowerCase().replace(/[^a-z0-9]/g, "-")}.wav`);
+        } catch (e) {
+          console.error(e);
+        }
+      });
+
+      if (isUser) {
+        card.querySelector(".lib-del-btn").addEventListener("click", () => deleteLibraryItem(comp.id));
+      }
+
+      container.appendChild(card);
+    });
+  }
+
+  document.getElementById("btn-save-current-lib")?.addEventListener("click", () => saveCurrentToLibrary());
+  document.getElementById("btn-reset-library")?.addEventListener("click", () => {
+    if (confirm("Reset saved compositions to default curated list?")) {
+      saveStoredLibrary([]);
+      renderLibrary();
+    }
+  });
+
+  // ───────────────────────────────────────────────────────────────
+  // GLOBAL HOOK: CALLED ONCE NASA DATASET IS LOADED
+  // ───────────────────────────────────────────────────────────────
+  window.initInnovativeFeatures = function() {
+    updateComparisonMetrics();
+    drawComparisonChart();
+    renderLibrary();
+    if (state.records.length) updateLiveDecoder(state.records[state.index]);
+  };
+
+  // Live Decoder hook
+  window.updateLiveDecoder = updateLiveDecoder;
+  window.drawComparisonChart = drawComparisonChart;
+  window.renderLibrary = renderLibrary;
+  window.saveCurrentToLibrary = saveCurrentToLibrary;
+})();
