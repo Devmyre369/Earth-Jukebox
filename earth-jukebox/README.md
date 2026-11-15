@@ -33,6 +33,50 @@ The production build validates and copies the bundled NASA JSON and static front
 
 Changing a palette or instrument changes synthesis and optional effects only. A manual instrument, level, enable, or effect edit changes the palette label to **Custom**.
 
+## Innovative Features
+
+EARTH JUKEBOX includes five integrated features that expand its creative and scientific capabilities while preserving its original architecture and identity:
+
+### 1. Historical Sound Comparison (A/B)
+- Compare two distinct historical periods through sound (e.g., 1880–1900 vs 2004–2024, 1951–1975 vs 2000–2024, or custom year ranges).
+- Uses the identical NASA GISTEMP data-to-sound mapping for both periods to ensure unbiased acoustic comparison.
+- Provides interactive A/B comparison playback: audition Period A, audition Period B, or listen to a sequential A-then-B transition.
+- Displays comprehensive statistical delta cards: mean anomaly difference (°C), acoustic pitch shift (Hz & semitones), and pulse agitation change.
+- Live comparative canvas visualization overlaying Period A and Period B trajectories with an active playback cursor.
+
+### 2. Nature Symphony — Multi-Environmental Music
+- Harmonize up to five environmental sound layers:
+  - **Temperature:** Melodic synthesizer driven by verified NASA GISTEMP v4 monthly observations.
+  - **Vegetation / Biosphere:** Sustained harmonic strings and warm resonance reflecting global canopy vigor (calibrated experimental demo layer).
+  - **Ocean Currents:** Atmospheric ambient swell and deep subsonic drone of ocean circulation (calibrated experimental demo layer).
+  - **Rainfall:** Rhythmic organic percussion and filtered droplet pulses (calibrated experimental demo layer).
+  - **Ice / Cryosphere:** Delicate crystalline bells, overtone harmonics, and shimmer (calibrated experimental demo layer).
+- Individual layer enable/disable, volume faders, solo, and mute controls.
+- Master mix volume, arrangement presets, and live multi-track synchronization.
+- **Download Composition as WAV:** High-fidelity 16-bit uncompressed PCM WAV audio rendered in-browser using Web Audio `OfflineAudioContext`.
+
+### 3. What If? — Environmental Scenario Simulator
+- Creative simulation sandbox allowing users to freely adjust hypothetical planetary parameters:
+  - Temperature anomaly (-2.0°C to +5.0°C)
+  - Forest coverage delta (-60% to +40%)
+  - Ocean surface temperature (-1.5°C to +4.0°C)
+  - Rainfall intensity (-50% to +50%)
+- Real-time generative sound loop that responds dynamically as sliders are moved.
+- Dual scenario comparison slots (Scenario A vs Scenario B) with quick presets ("Pre-Industrial", "Paris Target", "Current Reality", "Extreme Runaway Warming", "Glacial Freeze").
+- Clearly labeled as a hypothetical artistic simulation, not an IPCC physical model prediction or Earth system forecast.
+
+### 4. Explain the Music — Sonification Insights
+- Transparent scientific explanatory panel detailing:
+  - Exact dataset used: NASA GISTEMP v4 (Global Land-Ocean Temperature Index, 1880–2026).
+  - Mathematical data-to-sound mappings: Pitch ($f = 220 \times 2^{\text{norm} \times 1.35}$), Pulse ($|\Delta T|$), and Timbre ($\sigma_{12}$).
+  - Scientific measurements vs artistic sound design choices.
+  - **Live Real-Time Audio Decoder:** Displays instantaneous date, observed anomaly, translated frequency in Hz and musical note name, pulse BPM, and filter cutoff while any composition plays.
+
+### 5. Environmental Sound Library
+- In-browser composition archive with curated historical eras (Early Industrial, Reference Baseline, Modern Warming) and saved multi-environmental symphonies.
+- Allows saving any custom composition with a single click, replaying it instantly, comparing it, and exporting it as a WAV audio file.
+- Zero server or database requirement; safely persists locally in browser storage.
+
 ## Data-to-sound mapping
 
 - **Earth Melody — pitch:** the observed monthly anomaly is normalized against the record's minimum and maximum, then mapped exponentially to oscillator frequency. Lower and higher anomalies remain distinguishable.
