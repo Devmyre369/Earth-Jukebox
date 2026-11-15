@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#10120f">
+    <meta name="theme-color" content="#101014">
     <meta
       name="description"
       content="Listen to NASA GISTEMP global temperature anomalies as an interactive, data-driven sonification."
@@ -37,6 +37,54 @@
             <span class="note-icon" aria-hidden="true">i</span>
             This is a sonification of measurements, not a recording of the planet.
           </p>
+        </section>
+
+        <section class="surface-panel viz-panel" id="climate-surface-panel" aria-labelledby="surface-heading">
+          <div class="viz-panel-head">
+            <div>
+              <p class="panel-eyebrow"><span class="live-indicator" aria-hidden="true"></span> NASA GISTEMP v4 · OBSERVED MONTHLY DATA</p>
+              <h2 id="surface-heading">Climate surface</h2>
+              <p class="panel-subtitle">Year × calendar month × temperature anomaly. Missing observations remain gaps.</p>
+            </div>
+            <div class="surface-actions">
+              <label class="compact-select">
+                <span>View</span>
+                <select id="surface-mode" aria-label="Climate surface view">
+                  <option value="surface">3D surface</option>
+                  <option value="bars">3D monthly bars</option>
+                </select>
+              </label>
+              <button id="surface-reset" class="icon-button" type="button" aria-label="Reset climate visualization camera" title="Reset camera">Reset view</button>
+              <button id="surface-fullscreen" class="icon-button" type="button" aria-label="Toggle full screen visualization" title="Full screen">⛶</button>
+            </div>
+          </div>
+          <div class="surface-body">
+            <div class="surface-stage">
+              <canvas id="surface-canvas" role="img" aria-label="Interactive three-dimensional NASA GISTEMP monthly anomaly surface; drag to rotate, scroll to zoom, shift-drag to pan"></canvas>
+              <div id="surface-tooltip" class="surface-tooltip" role="status" hidden></div>
+              <div class="surface-hint"><span>DRAG TO ROTATE</span><span>SCROLL TO ZOOM</span><span>SHIFT + DRAG TO PAN</span></div>
+            </div>
+            <aside class="surface-legend" aria-label="Anomaly color scale">
+              <span class="axis-label">ANOMALY (°C)</span>
+              <div class="legend-bar"></div>
+              <div class="legend-values"><span id="legend-maximum">—</span><span>0</span><span id="legend-minimum">—</span></div>
+              <span class="axis-label">CYAN · BELOW ZERO<br>CRIMSON · ABOVE ZERO</span>
+            </aside>
+          </div>
+          <div class="surface-footer">
+            <div class="surface-readout"><span>SELECTED OBSERVATION</span><strong id="surface-readout">—</strong></div>
+            <div class="surface-layers">
+              <label><input id="show-mesh" type="checkbox" checked> Mesh</label>
+              <label><input id="show-points" type="checkbox" checked> Observations</label>
+            </div>
+            <div class="year-window">
+              <span class="axis-label">VISIBLE YEARS <strong id="year-window-label">—</strong></span>
+              <label class="sr-only" for="year-start">First displayed year</label>
+              <input id="year-start" type="range" min="0" max="0" value="0" disabled>
+              <label class="sr-only" for="year-end">Last displayed year</label>
+              <input id="year-end" type="range" min="0" max="0" value="0" disabled>
+            </div>
+          </div>
         </section>
 
         <section class="player" aria-label="Climate record player">
@@ -114,6 +162,105 @@
               </p>
             </div>
           </div>
+        </section>
+
+        <section class="viz-grid" aria-label="Scientific analysis panels">
+          <article class="viz-panel audio-panel" aria-labelledby="audio-viz-heading">
+            <div class="viz-panel-head compact-head">
+              <div>
+                <p class="panel-eyebrow">LIVE WEB AUDIO ANALYSER</p>
+                <h2 id="audio-viz-heading">Sound, as generated</h2>
+                <p class="panel-subtitle">Measured from the active EARTH JUKEBOX audio output.</p>
+              </div>
+              <span class="signal-state" id="audio-signal-state">AUDIO IDLE</span>
+            </div>
+            <div class="audio-canvas-grid">
+              <div class="audio-plot waveform-plot">
+                <div class="plot-title"><span>WAVEFORM</span><span>AMPLITUDE</span></div>
+                <canvas id="waveform-canvas" role="img" aria-label="Live waveform measured from the generated audio output"></canvas>
+                <div class="plot-axis"><span>−1</span><span>0</span><span>+1</span></div>
+              </div>
+              <div class="audio-plot frequency-plot">
+                <div class="plot-title"><span>LIVE FREQUENCY SPECTRUM</span><span>Hz · AUDIO</span></div>
+                <canvas id="audio-spectrum-canvas" role="img" aria-label="Live audio frequency spectrum measured from the generated audio output"></canvas>
+                <div class="plot-axis"><span>0 Hz</span><span>1 kHz</span><span>2 kHz</span><span>4 kHz</span></div>
+              </div>
+              <div class="audio-plot spectrogram-plot">
+                <div class="plot-title"><span>LIVE SPECTROGRAM</span><span>FREQUENCY → · TIME ↓</span></div>
+                <canvas id="spectrogram-canvas" role="img" aria-label="Rolling spectrogram of generated audio; color indicates measured signal intensity"></canvas>
+                <div class="plot-axis"><span>0 Hz</span><span>1 kHz</span><span>2 kHz</span><span>4 kHz</span><span>RECENT ↓ OLDER</span></div>
+              </div>
+            </div>
+            <p class="viz-note">Waveform, spectrum, and spectrogram use samples from the Web Audio analyser connected to the audible output. They are not climate frequency measurements.</p>
+          </article>
+
+          <article class="viz-panel climate-spectrum-panel" aria-labelledby="climate-spectrum-heading">
+            <div class="viz-panel-head compact-head">
+              <div>
+                <p class="panel-eyebrow">CLIMATE VARIABILITY · DERIVED</p>
+                <h2 id="climate-spectrum-heading">Temperature power spectrum</h2>
+                <p class="panel-subtitle">Monthly anomaly variability · cycles per year (not audio Hz)</p>
+              </div>
+              <button class="icon-button fullscreen-button" type="button" data-fullscreen="climate-spectrum-panel" aria-label="Toggle temperature power spectrum full screen">⛶</button>
+            </div>
+            <canvas id="climate-spectrum-canvas" class="science-chart" role="img" aria-label="Welch power spectrum of the monthly global temperature anomaly series"></canvas>
+            <p class="viz-note">Welch periodogram of the continuous monthly record: 256-month Hann windows, 128-month overlap, per-window linear detrending; power averaged across windows. Units: °C² / (cycle/year). Climate variability is not recorded sound.</p>
+          </article>
+
+          <article class="viz-panel annual-panel" aria-labelledby="annual-heading">
+            <div class="viz-panel-head compact-head">
+              <div>
+                <p class="panel-eyebrow">CALCULATED INDICATORS · NOT RAW ANNUAL OBSERVATIONS</p>
+                <h2 id="annual-heading">Annual means &amp; seasonal pattern</h2>
+                <p class="panel-subtitle">Annual mean from available months · calendar-month mean from observed values.</p>
+              </div>
+              <button class="icon-button fullscreen-button" type="button" data-fullscreen="annual-panel" aria-label="Toggle annual and seasonal chart full screen">⛶</button>
+            </div>
+            <canvas id="annual-canvas" class="science-chart" role="img" aria-label="Calculated annual mean anomalies and linear trend"></canvas>
+            <div class="seasonal-row">
+              <div>
+                <span class="axis-label">MONTHLY CLIMATOLOGY · DERIVED MEAN (°C)</span>
+                <canvas id="seasonal-canvas" role="img" aria-label="Derived mean anomaly by calendar month"></canvas>
+              </div>
+              <div class="trend-readout">
+                <span class="axis-label">SIMPLE OLS SLOPE</span>
+                <strong id="trend-value">—</strong>
+                <span>°C / decade across available annual means</span>
+                <small>Descriptive linear fit; not an attribution or projection.</small>
+              </div>
+            </div>
+            <p class="viz-note">Annual averages and the ordinary least-squares trend are calculated from available NASA monthly values. The seasonal comparison is a derived calendar-month mean over the selected year window.</p>
+          </article>
+
+          <article class="viz-panel layers-panel" aria-labelledby="layers-heading">
+            <div class="viz-panel-head compact-head">
+              <div>
+                <p class="panel-eyebrow">SONIFICATION ENGINE · CURRENT PARAMETERS</p>
+                <h2 id="layers-heading">Audio layers</h2>
+                <p class="panel-subtitle">Values below drive the sound for the selected observation.</p>
+              </div>
+              <button class="icon-button fullscreen-button" type="button" data-fullscreen="layers-panel" aria-label="Toggle audio layers full screen">⛶</button>
+            </div>
+            <div class="layer-readouts" aria-live="polite">
+              <div class="engine-layer">
+                <span class="engine-index">01</span><div class="engine-main"><strong>EARTH MELODY</strong><span>Triangle oscillator · pitch</span></div>
+                <output id="melody-value">—</output><div class="meter"><i id="melody-meter"></i></div>
+              </div>
+              <div class="engine-layer">
+                <span class="engine-index">02</span><div class="engine-main"><strong>EARTH PULSE</strong><span>Sine LFO · amplitude modulation</span></div>
+                <output id="pulse-value">—</output><div class="meter"><i id="pulse-meter"></i></div>
+              </div>
+              <div class="engine-layer">
+                <span class="engine-index">03</span><div class="engine-main"><strong>EARTH ATMOSPHERE</strong><span>Low-pass filter · timbre</span></div>
+                <output id="atmosphere-value">—</output><div class="meter"><i id="atmosphere-meter"></i></div>
+              </div>
+              <div class="engine-layer engine-layer-disabled">
+                <span class="engine-index">—</span><div class="engine-main"><strong>EARTH DRIFT</strong><span>Spatial motion is not implemented</span></div>
+                <output>INACTIVE</output><div class="meter"><i></i></div>
+              </div>
+            </div>
+            <p class="viz-note">Melody, pulse, and atmosphere values are read from the same anomaly-to-audio mapping that generates the sound. Earth Drift is not implemented.</p>
+          </article>
         </section>
 
         <section class="sound-guide" aria-labelledby="sound-heading">
@@ -194,6 +341,11 @@
                 and a 450 Hz filter cutoff. At the maximum, it reaches about 562 Hz, 6.5 pulses per
                 second, and a 3,500 Hz cutoff. Values between those endpoints are mapped linearly,
                 except pitch, which follows an exponential frequency scale.
+              </p>
+              <p>
+                The climate power spectrum uses Welch's averaged periodogram on contiguous monthly
+                anomalies with 256-month Hann windows and 128-month overlap. Its units are
+                cycles per year and °C² per (cycle/year), not acoustic frequency.
               </p>
               <p>
                 The NASA Climate Spiral video is not used as a synchronized timeline. No

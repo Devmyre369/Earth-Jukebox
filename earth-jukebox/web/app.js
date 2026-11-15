@@ -23,6 +23,33 @@ const elements = {
   volume: document.querySelector("#volume"),
   playbackStatus: document.querySelector("#playback-status"),
   observationCount: document.querySelector("#observation-count"),
+  surfaceCanvas: document.querySelector("#surface-canvas"),
+  surfaceTooltip: document.querySelector("#surface-tooltip"),
+  surfaceReadout: document.querySelector("#surface-readout"),
+  surfaceMode: document.querySelector("#surface-mode"),
+  surfaceReset: document.querySelector("#surface-reset"),
+  surfaceFullscreen: document.querySelector("#surface-fullscreen"),
+  showMesh: document.querySelector("#show-mesh"),
+  showPoints: document.querySelector("#show-points"),
+  yearStart: document.querySelector("#year-start"),
+  yearEnd: document.querySelector("#year-end"),
+  yearWindowLabel: document.querySelector("#year-window-label"),
+  legendMinimum: document.querySelector("#legend-minimum"),
+  legendMaximum: document.querySelector("#legend-maximum"),
+  waveformCanvas: document.querySelector("#waveform-canvas"),
+  audioSpectrumCanvas: document.querySelector("#audio-spectrum-canvas"),
+  spectrogramCanvas: document.querySelector("#spectrogram-canvas"),
+  audioSignalState: document.querySelector("#audio-signal-state"),
+  climateSpectrumCanvas: document.querySelector("#climate-spectrum-canvas"),
+  annualCanvas: document.querySelector("#annual-canvas"),
+  seasonalCanvas: document.querySelector("#seasonal-canvas"),
+  trendValue: document.querySelector("#trend-value"),
+  melodyValue: document.querySelector("#melody-value"),
+  pulseValue: document.querySelector("#pulse-value"),
+  atmosphereValue: document.querySelector("#atmosphere-value"),
+  melodyMeter: document.querySelector("#melody-meter"),
+  pulseMeter: document.querySelector("#pulse-meter"),
+  atmosphereMeter: document.querySelector("#atmosphere-meter"),
 };
 
 const state = {
@@ -35,7 +62,20 @@ const state = {
   lastSoundedIndex: -1,
   audioContext: null,
   masterGain: null,
+  analyser: null,
   activeNotes: new Set(),
+  years: [],
+  startYearIndex: 0,
+  endYearIndex: 0,
+  surfaceMode: "surface",
+  camera: { yaw: -0.52, pitch: 0.88, zoom: 1, panX: 0, panY: 0 },
+  surfacePoints: [],
+  audioFrame: null,
+  waveformData: null,
+  frequencyData: null,
+  powerSpectrum: [],
+  annualMeans: [],
+  monthlyMeans: [],
 };
 
 function setPlaybackStatus(message, isError) {
@@ -91,6 +131,155 @@ function validateDataset(dataset) {
   return { minimum, maximum };
 }
 
+function setupCanvas(canvas, heightOverride) {
+  const bounds = canvas.getBoundingClientRect();
+  const width = Math.floor(bounds.width);
+  const height = heightOverride || Math.floor(bounds.height);
+  if (width <= 0 || height <= 0) return null;
+
+  const ratio = Math.min(window.devicePixelRatio || 1, 2);
+  const pixelWidth = Math.round(width * ratio);
+  const pixelHeight = Math.round(height * ratio);
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  context.setTransform(ratio, 0, 0, ratio, 0, 0);
+  return { context, width, height };
+}
+
+function visibleYearBounds() {
+  return {
+    start: state.years[state.startYearIndex] ?? state.records[0]?.year,
+    end: state.years[state.endYearIndex] ?? state.records[state.records.length - 1]?.year,
+  };
+}
+
+function visibleRecords() {
+  const { start, end } = visibleYearBounds();
+  return state.records.filter((record) => record.year >= start && record.year <= end);
+}
+
+function updateYearWindowLabel() {
+  const { start, end } = visibleYearBounds();
+  elements.yearWindowLabel.textContent = `${start} — ${end}`;
+}
+
+function setYearWindow(startIndex, endIndex) {
+  const last = state.years.length - 1;
+  state.startYearIndex = Math.max(0, Math.min(startIndex, last));
+  state.endYearIndex = Math.max(0, Math.min(endIndex, last));
+  if (state.startYearIndex > state.endYearIndex) {
+    if (document.activeElement === elements.yearStart) state.endYearIndex = state.startYearIndex;
+    else state.startYearIndex = state.endYearIndex;
+  }
+  elements.yearStart.value = String(state.startYearIndex);
+  elements.yearEnd.value = String(state.endYearIndex);
+  updateYearWindowLabel();
+  calculateClimateSpectrum();
+  calculateClimateSummaries();
+  drawSurface();
+  drawTimeline();
+  drawClimateSpectrum();
+  drawAnnualChart();
+  drawSeasonalChart();
+}
+
+function calculateClimateSpectrum() {
+  const records = visibleRecords();
+  const segmentLength = Math.min(256, 2 ** Math.floor(Math.log2(records.length)));
+  if (segmentLength < 32) {
+    state.powerSpectrum = [];
+    return;
+  }
+
+  const hop = segmentLength / 2;
+  const sampleRate = 12;
+  const windowValues = Array.from(
+    { length: segmentLength },
+    (_, index) => 0.5 * (1 - Math.cos((2 * Math.PI * index) / (segmentLength - 1))),
+  );
+  const windowEnergy = windowValues.reduce((sum, value) => sum + value * value, 0);
+  const powers = new Float64Array(segmentLength / 2 + 1);
+  let segmentCount = 0;
+
+  for (let start = 0; start + segmentLength <= records.length; start += hop) {
+    const values = records.slice(start, start + segmentLength).map((record) => record.anomaly_celsius);
+    const meanTime = (segmentLength - 1) / 2;
+    const meanValue = values.reduce((sum, value) => sum + value, 0) / segmentLength;
+    let numerator = 0;
+    let denominator = 0;
+    values.forEach((value, index) => {
+      numerator += (index - meanTime) * (value - meanValue);
+      denominator += (index - meanTime) ** 2;
+    });
+    const slope = denominator ? numerator / denominator : 0;
+    const detrended = values.map(
+      (value, index) => (value - meanValue - slope * (index - meanTime)) * windowValues[index],
+    );
+
+    for (let bin = 0; bin <= segmentLength / 2; bin += 1) {
+      let real = 0;
+      let imaginary = 0;
+      for (let index = 0; index < segmentLength; index += 1) {
+        const angle = (2 * Math.PI * bin * index) / segmentLength;
+        real += detrended[index] * Math.cos(angle);
+        imaginary -= detrended[index] * Math.sin(angle);
+      }
+      let power = (real * real + imaginary * imaginary) / (sampleRate * windowEnergy);
+      if (bin !== 0 && bin !== segmentLength / 2) power *= 2;
+      powers[bin] += power;
+    }
+    segmentCount += 1;
+  }
+
+  state.powerSpectrum = Array.from(powers, (power, bin) => ({
+    frequency: (bin * sampleRate) / segmentLength,
+    density: segmentCount ? power / segmentCount : 0,
+  }));
+}
+
+function calculateClimateSummaries() {
+  const records = visibleRecords();
+  const annual = new Map();
+  const monthly = Array.from({ length: 12 }, () => ({ sum: 0, count: 0 }));
+  for (const record of records) {
+    const summary = annual.get(record.year) || { sum: 0, count: 0 };
+    summary.sum += record.anomaly_celsius;
+    summary.count += 1;
+    annual.set(record.year, summary);
+
+    const month = monthly[record.month - 1];
+    month.sum += record.anomaly_celsius;
+    month.count += 1;
+  }
+
+  state.annualMeans = Array.from(annual, ([year, value]) => ({
+    year,
+    mean: value.sum / value.count,
+    count: value.count,
+  }));
+  state.monthlyMeans = monthly.map((value, index) => ({
+    month: index + 1,
+    mean: value.count ? value.sum / value.count : null,
+    count: value.count,
+  }));
+
+  const count = state.annualMeans.length;
+  const meanYear = state.annualMeans.reduce((sum, item) => sum + item.year, 0) / (count || 1);
+  const meanAnomaly = state.annualMeans.reduce((sum, item) => sum + item.mean, 0) / (count || 1);
+  let covariance = 0;
+  let variance = 0;
+  for (const item of state.annualMeans) {
+    covariance += (item.year - meanYear) * (item.mean - meanAnomaly);
+    variance += (item.year - meanYear) ** 2;
+  }
+  const slopePerDecade = variance ? (covariance / variance) * 10 : 0;
+  elements.trendValue.textContent = `${slopePerDecade >= 0 ? "+" : ""}${slopePerDecade.toFixed(2)}`;
+}
+
 function setStatus(message, status) {
   elements.statusLabel.textContent = message;
   elements.status.classList.toggle("is-ready", status === "ready");
@@ -104,32 +293,260 @@ function updateReading() {
   elements.readingDate.textContent = formatMonth(record);
   elements.readingValue.innerHTML = `${formatAnomaly(record.anomaly_celsius)}<span> °C</span>`;
   elements.timeline.value = String(state.index);
+  elements.surfaceReadout.textContent = `${formatMonth(record)} · ${formatAnomaly(record.anomaly_celsius)} °C`;
+  updateLayerReadouts(record);
+  drawSurface();
   drawTimeline();
+  drawAnnualChart();
+  drawSeasonalChart();
+}
+
+function interpolateColor(start, end, amount) {
+  const left = start.match(/[a-f\d]{2}/gi).map((part) => parseInt(part, 16));
+  const right = end.match(/[a-f\d]{2}/gi).map((part) => parseInt(part, 16));
+  const channels = left.map((value, index) => Math.round(value + (right[index] - value) * amount));
+  return `rgb(${channels[0]} ${channels[1]} ${channels[2]})`;
+}
+
+function anomalyColor(value) {
+  if (value < 0) {
+    const ratio = Math.max(0, Math.min(1, value / state.minimum));
+    return interpolateColor("#596173", "#51dce8", ratio);
+  }
+  const ratio = state.maximum > 0 ? Math.min(1, value / state.maximum) : 0;
+  return interpolateColor("#596173", "#ff4667", ratio);
+}
+
+function drawSurface() {
+  const canvas = elements.surfaceCanvas;
+  const dimensions = setupCanvas(canvas);
+  if (!dimensions || state.records.length === 0) return;
+  const { context, width, height } = dimensions;
+  const camera = state.camera;
+  const { start, end } = visibleYearBounds();
+  const yearSpan = Math.max(1, end - start);
+  const anomalyScale = Math.max(Math.abs(state.minimum), Math.abs(state.maximum), 0.1);
+  const scale = Math.min(width * 0.49, height * 0.76) * camera.zoom;
+  const cosineYaw = Math.cos(camera.yaw);
+  const sineYaw = Math.sin(camera.yaw);
+  const cosinePitch = Math.cos(camera.pitch);
+  const sinePitch = Math.sin(camera.pitch);
+  const projected = [];
+
+  function project(x, y, z) {
+    const rotatedX = x * cosineYaw - y * sineYaw;
+    const rotatedY = x * sineYaw + y * cosineYaw;
+    const tiltedY = rotatedY * cosinePitch - z * sinePitch;
+    const depth = rotatedY * sinePitch + z * cosinePitch;
+    const perspective = 2.8 / (2.8 + depth * 0.2);
+    return {
+      x: width / 2 + camera.panX + rotatedX * scale * perspective,
+      y: height * 0.53 + camera.panY - tiltedY * scale * perspective,
+      depth,
+    };
+  }
+
+  const records = visibleRecords();
+  const lookup = new Map();
+  const years = [];
+  for (let year = start; year <= end; year += 1) years.push(year);
+  for (const record of records) {
+    const x = years.length === 1 ? 0 : -1 + ((record.year - start) / yearSpan) * 2;
+    const y = -0.75 + ((record.month - 1) / 11) * 1.5;
+    const z = (record.anomaly_celsius / anomalyScale) * 0.48;
+    const point = { record, position: project(x, y, z) };
+    lookup.set(`${record.year}-${record.month}`, point);
+    projected.push(point);
+  }
+  state.surfacePoints = projected;
+
+  context.clearRect(0, 0, width, height);
+  const background = context.createRadialGradient(width * 0.5, height * 0.52, 12, width * 0.5, height * 0.52, height * 0.74);
+  background.addColorStop(0, "rgba(36, 40, 59, 0.34)");
+  background.addColorStop(1, "rgba(11, 12, 18, 0)");
+  context.fillStyle = background;
+  context.fillRect(0, 0, width, height);
+
+  if (elements.showMesh.checked) {
+    const faces = [];
+    if (state.surfaceMode === "surface") {
+      for (let year = start; year < end; year += 1) {
+        for (let month = 1; month < 12; month += 1) {
+          const a = lookup.get(`${year}-${month}`);
+          const b = lookup.get(`${year + 1}-${month}`);
+          const c = lookup.get(`${year}-${month + 1}`);
+          const d = lookup.get(`${year + 1}-${month + 1}`);
+          if (!a || !b || !c || !d) continue;
+          if (monthNumber(b.record) !== monthNumber(a.record) + 12) continue;
+          if (monthNumber(c.record) !== monthNumber(a.record) + 1) continue;
+          if (monthNumber(d.record) !== monthNumber(b.record) + 1) continue;
+          const cells = [
+            [a, b, d],
+            [a, d, c],
+          ];
+          for (const cell of cells) {
+            const value = cell.reduce((sum, point) => sum + point.record.anomaly_celsius, 0) / cell.length;
+            const depth = cell.reduce((sum, point) => sum + point.position.depth, 0) / cell.length;
+            faces.push({ points: cell.map((point) => point.position), color: anomalyColor(value), depth });
+          }
+        }
+      }
+    } else {
+      const yearSpacing = 2 / Math.max(years.length, 1);
+      const monthSpacing = 1.5 / 12;
+      for (const point of projected) {
+        const { record } = point;
+        const centerX = years.length === 1
+          ? 0
+          : -1 + ((record.year - start + 0.5) / years.length) * 2;
+        const centerY = -0.75 + ((record.month - 0.5) / 12) * 1.5;
+        const halfX = yearSpacing * 0.36;
+        const halfY = monthSpacing * 0.36;
+        const topZ = (record.anomaly_celsius / anomalyScale) * 0.48;
+        const topCorners = [
+          project(centerX - halfX, centerY - halfY, topZ),
+          project(centerX + halfX, centerY - halfY, topZ),
+          project(centerX + halfX, centerY + halfY, topZ),
+          project(centerX - halfX, centerY + halfY, topZ),
+        ];
+        const baseCorners = [
+          project(centerX - halfX, centerY - halfY, 0),
+          project(centerX + halfX, centerY - halfY, 0),
+          project(centerX + halfX, centerY + halfY, 0),
+          project(centerX - halfX, centerY + halfY, 0),
+        ];
+        const quads = [
+          [topCorners[0], topCorners[1], topCorners[2], topCorners[3]],
+          [topCorners[0], topCorners[1], baseCorners[1], baseCorners[0]],
+          [topCorners[1], topCorners[2], baseCorners[2], baseCorners[1]],
+        ];
+        for (const quad of quads) {
+          const depth = quad.reduce((sum, vertex) => sum + vertex.depth, 0) / quad.length;
+          faces.push({ points: quad, color: anomalyColor(record.anomaly_celsius), depth });
+        }
+      }
+    }
+
+    faces.sort((left, right) => left.depth - right.depth);
+    for (const face of faces) {
+      context.beginPath();
+      context.moveTo(face.points[0].x, face.points[0].y);
+      for (let index = 1; index < face.points.length; index += 1) {
+        context.lineTo(face.points[index].x, face.points[index].y);
+      }
+      context.closePath();
+      context.fillStyle = face.color;
+      context.globalAlpha = state.surfaceMode === "surface" ? 0.83 : 0.72;
+      context.fill();
+      context.globalAlpha = 1;
+      context.strokeStyle = state.surfaceMode === "surface"
+        ? "rgba(220, 228, 241, 0.13)"
+        : "rgba(220, 228, 241, 0.08)";
+      context.lineWidth = 0.55;
+      context.stroke();
+    }
+  }
+
+  const zeroLeft = project(-1, -0.75, 0);
+  const zeroRight = project(1, -0.75, 0);
+  context.beginPath();
+  context.moveTo(zeroLeft.x, zeroLeft.y);
+  context.lineTo(zeroRight.x, zeroRight.y);
+  context.strokeStyle = "rgba(238, 241, 249, 0.42)";
+  context.setLineDash([5, 5]);
+  context.lineWidth = 1;
+  context.stroke();
+  context.setLineDash([]);
+
+  if (elements.showPoints.checked) {
+    for (const point of projected) {
+      context.beginPath();
+      context.arc(point.position.x, point.position.y, 1.15, 0, Math.PI * 2);
+      context.fillStyle = anomalyColor(point.record.anomaly_celsius);
+      context.globalAlpha = 0.76;
+      context.fill();
+      context.globalAlpha = 1;
+    }
+  }
+
+  const selected = state.records[state.index];
+  if (selected && selected.year >= start && selected.year <= end) {
+    const point = lookup.get(`${selected.year}-${selected.month}`);
+    if (point) {
+      context.beginPath();
+      context.arc(point.position.x, point.position.y, 6, 0, Math.PI * 2);
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 1.5;
+      context.stroke();
+      context.beginPath();
+      context.arc(point.position.x, point.position.y, 2.4, 0, Math.PI * 2);
+      context.fillStyle = "#ffffff";
+      context.fill();
+    }
+  }
+
+  context.fillStyle = "#9ca4b9";
+  context.font = "10px Consolas, monospace";
+  context.textAlign = "center";
+  context.fillText("YEAR →", width * 0.5, height - 31);
+  const monthAxis = project(-1, 0.75, 0);
+  context.save();
+  context.translate(monthAxis.x + 3, monthAxis.y - 7);
+  context.rotate(-0.54);
+  context.textAlign = "left";
+  context.fillText("MONTH →", 0, 0);
+  context.restore();
+  context.textAlign = "right";
+  context.fillText("ANOMALY (°C)", width - 18, 24);
+  context.textAlign = "left";
+  const yearTicks = [start, Math.round((start + end) / 2), end].filter((year, index, list) => list.indexOf(year) === index);
+  for (const year of yearTicks) {
+    const x = years.length === 1 ? 0 : -1 + ((year - start) / yearSpan) * 2;
+    const tick = project(x, -0.75, 0);
+    context.fillText(String(year), tick.x, tick.y + 16);
+  }
+}
+
+function closestSurfacePoint(x, y) {
+  let closest = null;
+  let distance = 25;
+  for (const point of state.surfacePoints) {
+    const currentDistance = Math.hypot(point.position.x - x, point.position.y - y);
+    if (currentDistance < distance) {
+      distance = currentDistance;
+      closest = point;
+    }
+  }
+  return closest;
+}
+
+function showSurfaceTooltip(point, clientX, clientY) {
+  if (!point) {
+    elements.surfaceTooltip.hidden = true;
+    return;
+  }
+  elements.surfaceTooltip.innerHTML =
+    `<strong>${formatMonth(point.record)}</strong><br>${formatAnomaly(point.record.anomaly_celsius)} °C anomaly`;
+  const bounds = elements.surfaceCanvas.parentElement.getBoundingClientRect();
+  elements.surfaceTooltip.style.left = `${Math.max(8, Math.min(bounds.width - 170, clientX - bounds.left + 12))}px`;
+  elements.surfaceTooltip.style.top = `${Math.max(8, Math.min(bounds.height - 54, clientY - bounds.top + 10))}px`;
+  elements.surfaceTooltip.hidden = false;
 }
 
 function drawTimeline() {
   const canvas = elements.chart;
-  const bounds = canvas.getBoundingClientRect();
-  if (bounds.width === 0 || bounds.height === 0 || state.records.length === 0) return;
+  const dimensions = setupCanvas(canvas);
+  if (!dimensions || state.records.length === 0) return;
+  const { context, width, height } = dimensions;
+  const records = visibleRecords();
+  if (records.length === 0) return;
 
-  const pixelRatio = window.devicePixelRatio || 1;
-  canvas.width = Math.round(bounds.width * pixelRatio);
-  canvas.height = Math.round(bounds.height * pixelRatio);
-  const context = canvas.getContext("2d");
-  if (!context) {
-    setPlaybackStatus("Your browser could not draw the timeline chart.", true);
-    return;
-  }
-  context.scale(pixelRatio, pixelRatio);
-
-  const width = bounds.width;
-  const height = bounds.height;
   const padding = { top: 28, right: 3, bottom: 12, left: 3 };
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
   const range = state.maximum - state.minimum || 1;
-  const monthStart = monthNumber(state.records[0]);
-  const monthEnd = monthNumber(state.records[state.records.length - 1]);
+  const monthStart = monthNumber(records[0]);
+  const monthEnd = monthNumber(records[records.length - 1]);
   const monthSpan = Math.max(monthEnd - monthStart, 1);
   const x = (record) => padding.left + ((monthNumber(record) - monthStart) / monthSpan) * plotWidth;
   const y = (value) => padding.top + ((state.maximum - value) / range) * plotHeight;
@@ -139,7 +556,7 @@ function drawTimeline() {
   if (zeroY !== null) {
     context.beginPath();
     context.setLineDash([3, 5]);
-    context.strokeStyle = "rgba(225, 230, 215, 0.17)";
+    context.strokeStyle = "rgba(220, 225, 238, 0.24)";
     context.moveTo(padding.left, zeroY);
     context.lineTo(width - padding.right, zeroY);
     context.stroke();
@@ -148,7 +565,7 @@ function drawTimeline() {
 
   context.beginPath();
   let previousMonth = null;
-  state.records.forEach((record) => {
+  for (const record of records) {
     const currentMonth = monthNumber(record);
     if (previousMonth === null || currentMonth - previousMonth !== 1) {
       context.moveTo(x(record), y(record.anomaly_celsius));
@@ -156,37 +573,31 @@ function drawTimeline() {
       context.lineTo(x(record), y(record.anomaly_celsius));
     }
     previousMonth = currentMonth;
-  });
-  context.strokeStyle = "#d3f36b";
-  context.lineWidth = 1.6;
+  }
+  context.strokeStyle = "#51dce8";
+  context.lineWidth = 1.55;
   context.lineJoin = "round";
   context.stroke();
 
   const selected = state.records[state.index];
-  if (selected) {
+  if (selected && selected.year >= visibleYearBounds().start && selected.year <= visibleYearBounds().end) {
     const selectedX = x(selected);
     const selectedY = y(selected.anomaly_celsius);
     context.beginPath();
     context.moveTo(selectedX, padding.top);
     context.lineTo(selectedX, height - padding.bottom);
-    context.strokeStyle = "rgba(211, 243, 107, 0.45)";
+    context.strokeStyle = "rgba(255, 70, 103, 0.7)";
     context.lineWidth = 1;
     context.stroke();
     context.beginPath();
     context.arc(selectedX, selectedY, 4, 0, Math.PI * 2);
-    context.fillStyle = "#d3f36b";
+    context.fillStyle = "#ff4667";
     context.fill();
-    context.beginPath();
-    context.arc(selectedX, selectedY, 7, 0, Math.PI * 2);
-    context.strokeStyle = "rgba(211, 243, 107, 0.32)";
-    context.lineWidth = 1;
-    context.stroke();
   }
 }
 
 function updateAxis() {
-  const firstYear = state.records[0].year;
-  const lastYear = state.records[state.records.length - 1].year;
+  const { start: firstYear, end: lastYear } = visibleYearBounds();
   const span = lastYear - firstYear;
   const step = Math.max(1, Math.ceil(span / 4 / 10) * 10);
   const labels = [];
