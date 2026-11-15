@@ -35,6 +35,7 @@ const state = {
   lastSoundedIndex: -1,
   audioContext: null,
   masterGain: null,
+  activeNotes: new Set(),
 };
 
 function setPlaybackStatus(message, isError) {
@@ -203,6 +204,7 @@ function updateAxis() {
 }
 
 function setSelectedIndex(index, soundIfPlaying) {
+  stopActiveNotes();
   state.index = Math.max(0, Math.min(index, state.records.length - 1));
   state.lastSoundedIndex = -1;
   updateReading();
@@ -270,6 +272,7 @@ function playCurrentRecord() {
   pulseDepth.connect(tremolo.gain);
 
   oscillator.onended = () => {
+    state.activeNotes.delete(activeNote);
     oscillator.disconnect();
     filter.disconnect();
     envelope.disconnect();
@@ -277,11 +280,24 @@ function playCurrentRecord() {
     pulse.disconnect();
     pulseDepth.disconnect();
   };
+  const activeNote = { oscillator, pulse, envelope };
+  state.activeNotes.add(activeNote);
   oscillator.start(now);
   pulse.start(now);
   oscillator.stop(now + duration + 0.02);
   pulse.stop(now + duration + 0.02);
   state.lastSoundedIndex = state.index;
+}
+
+function stopActiveNotes() {
+  if (!state.audioContext) return;
+  const now = state.audioContext.currentTime;
+  for (const note of state.activeNotes) {
+    note.envelope.gain.cancelScheduledValues(now);
+    note.envelope.gain.setTargetAtTime(0.0001, now, 0.006);
+    note.oscillator.stop(now + 0.025);
+    note.pulse.stop(now + 0.025);
+  }
 }
 
 function clearTimer() {
@@ -347,6 +363,7 @@ function pausePlayback() {
 function stopPlayback() {
   state.playing = false;
   clearTimer();
+  stopActiveNotes();
   state.lastSoundedIndex = -1;
   state.index = 0;
   updateReading();
