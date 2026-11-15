@@ -1,63 +1,62 @@
 # EARTH JUKEBOX
 
-**Hear the climate record, month by month.**
+EARTH JUKEBOX sonifies NASA GISTEMP v4 monthly global temperature anomalies. Synthesized audio is an artistic rendering of measurements, not a recording of Earth or an acoustic measurement.
 
-EARTH JUKEBOX turns NASA GISTEMP v4 global temperature anomalies into an interactive, data-driven sound. It is an artistic sonification of measurements, **not a recording of the planet**.
+## Run locally (Windows PowerShell)
 
-## Run locally
-
-From the repository root, build the static application and start a local HTTP server:
+From the `earth-jukebox` project directory:
 
 ```powershell
 python -m processing.build_site
 python -m http.server 8000 --directory dist
 ```
 
-Open [http://localhost:8000](http://localhost:8000). Use a modern browser with Web Audio support and turn on audio after pressing **Play Earth**. The app loads its bundled NASA JSON, so the browser does not need external data access.
+Open <http://localhost:8000/>. Stop the local server with `Ctrl+C`.
 
-To regenerate the standardized JSON from the preserved NASA source CSV before building:
+The production build validates and copies the bundled NASA JSON and static frontend into `dist`. No frontend package installation or backend service is required. Python is only needed to build and serve the static files.
+
+## Listen and explore
+
+1. Select an observation on the timeline and note its anomaly in °C relative to 1951–1980.
+2. Press **Play Earth**. The selected date, timeline, scientific plots, and generated audio follow the same playback index. Use the timeline to seek, **Pause**/**Play Earth** to pause and resume, **Stop** to return to the first observation, and **Speed** to change the interval between observations.
+3. Open **EARTH SOUND STUDIO** to choose a palette or individual instrument. The scientific measurements and mappings do not change.
+4. Adjust layer and master levels, disable or solo layers, mute, or enable optional reverb and delay. **Reset sound** restores the Scientific palette defaults. **Preview** auditions an isolated synthesized sound-design tone and does not advance or change the data timeline.
+5. View the live waveform, frequency spectrum, and spectrogram. They are read from the Web Audio analyser connected to the audible output, including any active preview. Audio frequency is distinct from climate variability frequency.
+
+### Palettes
+
+- **Scientific:** piano, wooden ticks, and harmonic drone; dry and restrained.
+- **Ambient:** soft strings, heartbeat-style pulse, and ambient pad; gentle space.
+- **Orchestral:** soft strings, soft percussion, and atmospheric strings.
+- **Electronic:** synth lead, electronic percussion, and evolving synth texture.
+- **Cinematic:** bell, minimal electronic beat, and soft cinematic texture.
+
+Changing a palette or instrument changes synthesis and optional effects only. A manual instrument, level, enable, or effect edit changes the palette label to **Custom**.
+
+## Data-to-sound mapping
+
+- **Earth Melody — pitch:** the observed monthly anomaly is normalized against the record's minimum and maximum, then mapped exponentially to oscillator frequency. Lower and higher anomalies remain distinguishable.
+- **Earth Pulse — rhythm and intensity:** the absolute difference from the previous *consecutive observed month* is normalized against the largest consecutive-month change in the bundled record. It controls pulse rate and strength. No prior month, unchanged observations, or a gap produce no pulse event.
+- **Earth Atmosphere — timbre:** the population standard deviation of up to 12 consecutive observations ending at the selected month controls harmonic richness and low-pass brightness. A gap is not bridged; fewer than two observations yield no atmosphere voice.
+- Playback speed changes the shared interval between observations. Instrument envelopes, layer gains, and effect sends use smoothed transitions. A dynamics compressor limits combined output peaks.
+
+Annual means, seasonal means, trend, and the temperature power spectrum are calculated indicators, not raw NASA observations. The power spectrum is computed from contiguous monthly records and uses cycles per year; it is not an audio spectrum. The NASA Climate Spiral is not synchronized to the timeline.
+
+## Data source and integrity
+
+The application uses the checked-in standardized monthly JSON at `data/processed/global_temperature_monthly.json`, sourced from [NASA GISTEMP](https://data.giss.nasa.gov/gistemp/). It preserves the supplied observation values, dates, and omissions. The dataset is global and has no geographic coordinates. The 3D-style surface is a 2D-canvas projection of the monthly record, not a geographic globe or WebGL model.
+
+## Validation
 
 ```powershell
-python -m pip install pandas
-python -m processing.generate_dataset
+node --check web\app.js
 python -m processing.build_site
-python -m http.server 8000 --directory dist
 ```
 
-The static build uses only Python's standard library. The optional JSON regeneration uses the existing Pandas-based data pipeline; no frontend packages or build dependencies are added.
+## Current limitations
 
-## 30-second demonstration
-
-1. **0–10 seconds:** Point out that the number is a temperature *anomaly* in °C relative to 1951–1980, not an absolute temperature.
-2. **10–20 seconds:** Press **Play Earth**. Each note is one available month; the chart cursor and displayed date move with that same observation.
-3. **20–30 seconds:** Listen for pitch, pulse, and brightness changing with the measurements. Pause, seek, or change playback speed to explore.
-
-## Completed experience
-
-- NASA GISTEMP v4 monthly JSON loads from the locally bundled dataset; the client checks its structure and chronological order.
-- Web Audio sonifies each selected observation. Higher anomalies within the observed series produce higher pitch, faster tremolo, and a brighter low-pass filter.
-- Interactive Canvas 3D climate surface and monthly-bar view use the actual year/month/anomaly observations. Drag to rotate, scroll to zoom, Shift-drag to pan; select a point to seek. Missing values are left as gaps.
-- One selected observation synchronizes the climate surface, timeline, current reading, audio parameter readouts, and sound. Year-range controls filter the visual analyses; they do not alter or fabricate the source record.
-- Live waveform, audio spectrum, and rolling spectrogram are read from a Web Audio `AnalyserNode` connected to the audible output.
-- Temperature power spectrum uses a Welch periodogram: contiguous monthly runs only, per-segment linear detrending, Hann windows up to 256 months, 50% overlap, and averaged one-sided power spectral density. Frequency is cycles/year, not audio Hz; density is °C²/(cycle/year).
-- Annual averages use the available observations in each displayed year; calendar-month averages are derived from available values. A simple OLS slope uses complete calendar years only, excluding partial years; it is a descriptive indicator, not attribution or projection.
-- Click the annual or calendar-month charts to select the corresponding closest actual monthly record. Full-screen buttons, reset camera, mesh/observation visibility, and 3D surface/bar views are available.
-- Play, pause/resume, stop, seek, playback speeds (0.5×–4×), and volume controls.
-- Responsive desktop and mobile layouts, keyboard-operable controls, and a visible first-30-seconds demo flow.
-- Accessible explanation of the measurement, data source, transformation, and scientific limitations.
-- Reproducible, dependency-free static production build. No frontend packages or external charting or 3D library are required; Canvas 2D provides the interactive 3D projection and 2D scientific charts.
-
-## Scientific source and limits
-
-- **Dataset:** NASA GISTEMP v4 global mean land–ocean temperature anomalies, in °C relative to 1951–1980; monthly observations from the preserved source data.
-- **Processing:** The original NASA CSV remains in `data/raw/`. The standardized JSON in `data/processed/` excludes missing observations; it does not replace them with zero or interpolate values.
-- **Sonification:** Across the observed record's minimum-to-maximum range, pitch maps exponentially from 220 to about 562 Hz; tremolo rate and filter cutoff map linearly from 1.5–6.5 Hz and 450–3,500 Hz. These are artistic mappings, not additional scientific measurements.
-- **Derived analyses:** The power spectrum, annual means, calendar-month means, and OLS slope are calculated indicators, not fields provided by NASA. Welch frequency is climate-series variability in cycles/year, never acoustic frequency. Annual values with fewer source months are means of the months actually present.
-- **Audio visualization:** Waveform, spectrum, and spectrogram measure the generated Web Audio output. They are unavailable until playback creates/resumes the audio context; they do not represent climate measurements.
-- **Rendering:** The interactive 3D view is an orthographic/perspective Canvas 2D projection, not a WebGL surface. It supports pointer rotation, zoom, pan, data selection, and a 2D-rendered fallback, but not a geographic globe or spatially resolved climate field.
-- **Audio layers:** Earth Melody (oscillator pitch), Earth Pulse (tremolo), and Earth Atmosphere (filter cutoff) are implemented. Earth Drift/spatial motion is not implemented and is displayed as inactive.
-- **Geography:** This is a global series without geographic resolution; the application does not imply location or use spatial audio.
-- **Video:** The NASA Climate Spiral asset is not synchronized to the audio or timeline. No frame-to-month timing is inferred.
-- **Browser:** Audio requires a browser with Web Audio support and a user gesture to start. Browsers may require serving the files over HTTP rather than opening the HTML directly.
-
-For source details, see [docs/data_sources.md](docs/data_sources.md).
+- Instruments are synthesized with the Web Audio API; they are not sampled recordings of physical instruments or environmental sounds.
+- The surface is rendered with Canvas 2D and does not encode geographic locations.
+- Earth Drift/spatial motion is not implemented.
+- No NASA video frame-to-month synchronization is claimed.
+- Web Audio requires browser support and a user gesture to start playback or preview.
