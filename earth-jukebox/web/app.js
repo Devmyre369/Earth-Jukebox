@@ -5,6 +5,69 @@ const MONTH_DURATION_MS = 480;
 const MIN_FREQUENCY_HZ = 220;
 const PITCH_OCTAVES = 1.35;
 
+const LAYER_NAMES = ["melody", "pulse", "atmosphere"];
+const INSTRUMENT_NAMES = {
+  melody: {
+    piano: "Piano",
+    "synth-lead": "Synth Lead",
+    bell: "Bell",
+    "soft-strings": "Soft Strings",
+    mallet: "Mallet Instrument",
+  },
+  pulse: {
+    "soft-percussion": "Soft Percussion",
+    "electronic-percussion": "Electronic Percussion",
+    "wooden-ticks": "Wooden Ticks",
+    heartbeat: "Soft Heartbeat-style Pulse",
+    "minimal-beat": "Minimal Electronic Beat",
+  },
+  atmosphere: {
+    "ambient-pad": "Ambient Synth Pad",
+    "atmospheric-strings": "Atmospheric Strings",
+    "harmonic-drone": "Harmonic Drone",
+    "evolving-texture": "Evolving Synth Texture",
+    "cinematic-texture": "Soft Cinematic Texture",
+  },
+};
+
+const SOUND_PALETTES = {
+  scientific: {
+    description: "Clean, restrained layers for interpreting the measurements.",
+    instruments: { melody: "piano", pulse: "wooden-ticks", atmosphere: "harmonic-drone" },
+    levels: { melody: 0.8, pulse: 0.48, atmosphere: 0.34 },
+    reverb: 0,
+    delay: 0,
+  },
+  ambient: {
+    description: "Soft sustained textures, gentle pulse, and spacious reverb.",
+    instruments: { melody: "soft-strings", pulse: "heartbeat", atmosphere: "ambient-pad" },
+    levels: { melody: 0.68, pulse: 0.4, atmosphere: 0.55 },
+    reverb: 0.2,
+    delay: 0.08,
+  },
+  orchestral: {
+    description: "Strings and restrained percussion with a cinematic, orchestral balance.",
+    instruments: { melody: "soft-strings", pulse: "soft-percussion", atmosphere: "atmospheric-strings" },
+    levels: { melody: 0.72, pulse: 0.5, atmosphere: 0.5 },
+    reverb: 0.18,
+    delay: 0,
+  },
+  electronic: {
+    description: "Modern synth timbres, electronic percussion, and a subtle tempo-synced echo.",
+    instruments: { melody: "synth-lead", pulse: "electronic-percussion", atmosphere: "evolving-texture" },
+    levels: { melody: 0.7, pulse: 0.48, atmosphere: 0.45 },
+    reverb: 0.04,
+    delay: 0.12,
+  },
+  cinematic: {
+    description: "Bell-like melody and rich, controlled textures with restrained spatial effects.",
+    instruments: { melody: "bell", pulse: "minimal-beat", atmosphere: "cinematic-texture" },
+    levels: { melody: 0.72, pulse: 0.42, atmosphere: 0.52 },
+    reverb: 0.24,
+    delay: 0.1,
+  },
+};
+
 const elements = {
   status: document.querySelector("#data-status"),
   statusLabel: document.querySelector("#status-label"),
@@ -777,14 +840,33 @@ function updateAxis() {
 function updateLayerReadouts(record) {
   const normalized = normalizedValue(record);
   const frequency = MIN_FREQUENCY_HZ * Math.pow(2, normalized * PITCH_OCTAVES);
-  const pulseRate = 1.5 + normalized * 5;
-  const cutoff = 450 + normalized * 3050;
+  const metrics = state.metrics[state.index];
+  const pulseRate = metrics && metrics.change !== null ? 0.5 + metrics.changeNormalized * 5.5 : 0;
+  const pulseCount = metrics && metrics.change !== null
+    ? pulseHitCount(metrics, MONTH_DURATION_MS / Number(elements.speed.value) / 1000)
+    : 0;
+  const variability = metrics ? metrics.variability : null;
+  const variabilityNormalized = metrics && variability !== null ? metrics.variabilityNormalized : 0;
+  const cutoff = 350 + variabilityNormalized * 3650;
   elements.melodyValue.textContent = `${frequency.toFixed(1)} Hz`;
-  elements.pulseValue.textContent = `${pulseRate.toFixed(2)} Hz`;
-  elements.atmosphereValue.textContent = `${Math.round(cutoff).toLocaleString()} Hz`;
+  elements.pulseValue.textContent = metrics && metrics.change !== null
+    ? `${pulseRate.toFixed(2)} Hz · ${pulseCount} ${pulseCount === 1 ? "hit" : "hits"}`
+    : "NO PRIOR MONTH";
+  elements.atmosphereValue.textContent = variability === null
+    ? "INSUFFICIENT HISTORY"
+    : `σ ${variability.toFixed(3)} °C · ${Math.round(cutoff).toLocaleString()} Hz`;
   elements.melodyMeter.style.width = `${Math.min(100, (frequency / (MIN_FREQUENCY_HZ * 2 ** PITCH_OCTAVES)) * 100)}%`;
-  elements.pulseMeter.style.width = `${(pulseRate / 6.5) * 100}%`;
-  elements.atmosphereMeter.style.width = `${(cutoff / 3500) * 100}%`;
+  elements.pulseMeter.style.width = `${metrics && metrics.change !== null ? metrics.changeNormalized * 100 : 0}%`;
+  elements.atmosphereMeter.style.width = `${variability === null ? 0 : variabilityNormalized * 100}%`;
+  for (const layer of LAYER_NAMES) {
+    const name = INSTRUMENT_NAMES[layer][state.sound.instruments[layer]];
+    const mapping = layer === "melody"
+      ? "anomaly to pitch"
+      : layer === "pulse"
+        ? "monthly change to rhythm"
+        : "variability to texture";
+    elements.layerInstrumentNames[layer].textContent = `${name} · ${mapping}`;
+  }
 }
 
 function drawClimateSpectrum() {
