@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10120f">
+    <meta
+      name="description"
+      content="Listen to NASA GISTEMP global temperature anomalies as an interactive, data-driven sonification."
+    >
+    <title>EARTH JUKEBOX — Hear the climate record</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="wordmark" href="#top" aria-label="Earth Jukebox home">
+          <span class="brand-mark" aria-hidden="true">EJ</span>
+          <span>EARTH <span class="wordmark-light">JUKEBOX</span></span>
+        </a>
+        <div class="data-status" id="data-status">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="status-label">Loading NASA data</span>
+        </div>
+      </header>
+
+      <main id="top">
+        <section class="intro" aria-labelledby="page-title">
+          <p class="eyebrow"><span class="eyebrow-line"></span> A NASA GISTEMP sonification</p>
+          <h1 id="page-title">A changing climate,<br><span>heard month by month.</span></h1>
+          <p class="intro-copy">
+            Each note represents a real monthly global temperature anomaly in NASA's record.
+            Follow the timeline as the measurements become a sound you can explore.
+          </p>
+          <p class="integrity-note">
+            <span class="note-icon" aria-hidden="true">i</span>
+            This is a sonification of measurements, not a recording of the planet.
+          </p>
+        </section>
+
+        <section class="player" aria-label="Climate record player">
+          <div class="player-topline">
+            <div class="dataset-label">
+              <span class="live-indicator" aria-hidden="true"></span>
+              <span>GLOBAL TEMPERATURE ANOMALY</span>
+            </div>
+            <span class="dataset-range" id="dataset-range">Preparing record…</span>
+          </div>
+
+          <div class="player-grid">
+            <div class="visual-panel">
+              <div class="reading">
+                <div>
+                  <p class="reading-label" id="reading-date">Waiting for data</p>
+                  <p class="reading-value" id="reading-value">--<span> °C</span></p>
+                </div>
+                <p class="reading-context">relative to<br>1951–1980</p>
+              </div>
+
+              <div class="chart-wrap">
+                <canvas
+                  id="timeline-chart"
+                  role="img"
+                  aria-label="Timeline chart of monthly NASA global temperature anomalies"
+                ></canvas>
+                <div class="chart-axis" id="chart-axis" aria-hidden="true"></div>
+                <input
+                  id="timeline"
+                  class="timeline-input"
+                  type="range"
+                  min="0"
+                  max="0"
+                  value="0"
+                  step="1"
+                  aria-label="Seek to a month in the NASA temperature record"
+                  disabled
+                >
+              </div>
+              <div class="timeline-hint">
+                <span>1880</span>
+                <span id="timeline-hint-end">Scroll through the record</span>
+                <span id="timeline-end">—</span>
+              </div>
+            </div>
+
+            <div class="control-panel">
+              <p class="control-kicker">LISTEN TO THE DATA</p>
+              <p class="control-explainer">One sound for each available monthly observation.</p>
+              <button id="play-button" class="play-button" type="button" disabled>
+                <span class="play-icon" aria-hidden="true">▶</span>
+                <span id="play-label">Play Earth</span>
+              </button>
+              <div class="transport-controls">
+                <button id="stop-button" class="secondary-button" type="button" disabled>
+                  <span aria-hidden="true">■</span> Stop
+                </button>
+                <label class="speed-control">
+                  <span>Speed</span>
+                  <select id="speed-select" aria-label="Playback speed" disabled>
+                    <option value="0.5">0.5×</option>
+                    <option value="1" selected>1×</option>
+                    <option value="2">2×</option>
+                    <option value="4">4×</option>
+                  </select>
+                </label>
+              </div>
+              <label class="volume-control" for="volume">
+                <span>Volume</span>
+                <input id="volume" type="range" min="0" max="1" value="0.55" step="0.01" aria-label="Volume" disabled>
+              </label>
+              <p class="playback-status" id="playback-status" aria-live="polite">
+                Loading the verified monthly record…
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="sound-guide" aria-labelledby="sound-heading">
+          <div class="section-heading">
+            <p class="eyebrow"><span class="eyebrow-line"></span> How to listen</p>
+            <h2 id="sound-heading">Three layers. One measurement.</h2>
+          </div>
+          <div class="sound-layers">
+            <article class="sound-layer">
+              <span class="layer-number">01</span>
+              <div>
+                <h3>Pitch</h3>
+                <p>A higher anomaly in the observed series maps to a higher note.</p>
+              </div>
+              <span class="layer-mark pitch-mark" aria-hidden="true"></span>
+            </article>
+            <article class="sound-layer">
+              <span class="layer-number">02</span>
+              <div>
+                <h3>Pulse</h3>
+                <p>The tremolo speeds up as the anomaly moves higher in the series.</p>
+              </div>
+              <span class="layer-mark pulse-mark" aria-hidden="true"></span>
+            </article>
+            <article class="sound-layer">
+              <span class="layer-number">03</span>
+              <div>
+                <h3>Timbre</h3>
+                <p>The tone's filter brightens as the anomaly moves higher.</p>
+              </div>
+              <span class="layer-mark timbre-mark" aria-hidden="true"></span>
+            </article>
+          </div>
+          <p class="mapping-note">
+            These are artistic mappings across the observed dataset range. The measurement remains
+            a temperature anomaly in °C; sound is not a second measurement.
+          </p>
+        </section>
+
+        <details class="science-details">
+          <summary>
+            <span>
+              <span class="details-title">About the science</span>
+              <span class="details-subtitle">Source, units, and how the sound is made</span>
+            </span>
+            <span class="details-toggle" aria-hidden="true">+</span>
+          </summary>
+          <div class="details-content">
+            <div>
+              <h3>The measurement</h3>
+              <p>
+                NASA GISTEMP v4 reports global mean land–ocean temperature anomalies relative to
+                the 1951–1980 average. An anomaly is a difference from that reference, not an
+                absolute temperature. This global dataset does not provide geographic positions.
+              </p>
+              <p>
+                The local record contains <strong id="observation-count">—</strong> valid monthly
+                observations. Missing NASA observations are omitted, never filled with zero or
+                interpolated.
+              </p>
+              <a
+                class="source-link"
+                href="https://data.giss.nasa.gov/gistemp/"
+                target="_blank"
+                rel="noreferrer"
+              >NASA GISTEMP source and documentation <span aria-hidden="true">↗</span></a>
+            </div>
+            <div>
+              <h3>The sound mapping</h3>
+              <p>
+                For each available month, the anomaly is normalized against the minimum and
+                maximum values in this record. That normalized value controls note frequency,
+                tremolo rate, and low-pass filter cutoff. The chart and audio use the same selected
+                record, and playback speed changes the time between observations.
+              </p>
+              <p>
+                The NASA Climate Spiral video is not used as a synchronized timeline. No
+                frame-to-month relationship is assumed.
+              </p>
+            </div>
+          </div>
+        </details>
+
+        <section class="demo-flow" aria-labelledby="demo-heading">
+          <p class="eyebrow"><span class="eyebrow-line"></span> Your first 30 seconds</p>
+          <h2 id="demo-heading">A quick listening guide</h2>
+          <ol>
+            <li><span>00–10s</span><p>Start at the beginning and read the selected anomaly and reference period.</p></li>
+            <li><span>10–20s</span><p>Press <strong>Play Earth</strong>. Each note and chart position represents the same month.</p></li>
+            <li><span>20–30s</span><p>Listen for higher notes and brighter, faster pulses as the mapped anomaly rises.</p></li>
+          </ol>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span>EARTH JUKEBOX</span>
+        <span>NASA GISTEMP v4 · Global monthly anomalies · Artistic sonification</span>
+      </footer>
+    </div>
+  </body>
+</html>

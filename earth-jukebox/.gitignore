@@ -27,5 +27,9 @@ Thumbs.db
 # Generated data
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/global_temperature_monthly.json
+
+# Static production build
+dist/
 
 # Generated metadata caches
